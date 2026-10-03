@@ -1,0 +1,67 @@
+# 🧠 AI Recruitment Intelligence
+
+Full-stack platform that scores resume-to-job fit, finds skill gaps, ranks candidates in bulk, and runs
+**voice-based mock interviews** with per-answer scoring, speech analytics and a final hiring recommendation.
+
+## Features
+| Area | What it does |
+|---|---|
+| ATS analysis | TF-IDF / cosine-similarity scoring, skill-gap detection, job matching, learning plan |
+| AI interview | Resume- and JD-aware questions, difficulty levels, per-answer scores and feedback, final report |
+| Voice | Text-to-speech questions + Whisper (Groq) speech-to-text answers, works in all modern browsers |
+| Speech analytics | Words per minute, filler-word detection, pace feedback |
+| STAR coach | Checks behavioural answers for Situation / Task / Action / Result |
+| Timer + proctoring | Per-question timer, tab-switch detection |
+| Accounts | Register / login (JWT, PBKDF2-hashed passwords), SQLite interview history with progress chart |
+| Recruiter tools | Bulk ranking of up to 20 resumes against one job description |
+| Resume rewriter | Job-targeted bullet rewrites (never invents facts) |
+| Reports | One-click PDF interview report |
+| Engineering | Rate limiting, request logging, JSON error handling, pytest suite, Docker, GitHub Actions CI |
+
+## Architecture
+```mermaid
+flowchart LR
+  B[Browser: HTML/JS, Chart.js, MediaRecorder] -->|REST + JWT| A[FastAPI]
+  A --> S[scoring.py: TF-IDF / cosine]
+  A --> L[llm.py: Groq LLM]
+  A --> W[Groq Whisper STT]
+  A --> D[(SQLite)]
+```
+
+## Run locally
+```powershell
+python -m venv venv ; .\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+# .env in the project root:
+#   LLM_PROVIDER=groq
+#   GROQ_API_KEY=your_key
+#   LLM_MODEL=openai/gpt-oss-120b
+#   JWT_SECRET=a-long-random-string
+cd backend
+uvicorn main:app --reload
+```
+Open http://127.0.0.1:8000
+
+## Tests
+```powershell
+cd backend ; python -m pytest tests -q
+```
+
+## Docker
+```bash
+docker build -t ai-recruitment .
+docker run -p 8000:8000 --env-file .env ai-recruitment
+```
+
+## Deploy (Render / Railway)
+Create a Web Service from this repo using the Dockerfile and add the environment variables above.
+Note: SQLite data resets on free hosts that have no persistent disk; use a Postgres database for production.
+
+## API overview
+`POST /api/analyze` · `POST /api/interview/start|answer` · `GET /api/interview/report/{id}` ·
+`POST /api/auth/register|login` · `GET /api/history` · `POST /api/history/save` ·
+`POST /api/speech/analyze` · `POST /api/star/check` · `POST /api/transcribe` ·
+`POST /api/bulk-rank` · `POST /api/rewrite-resume` · `POST /api/report/pdf`
+
+## Limitations / roadmap
+In-memory interview sessions (move to the database), adaptive difficulty, webcam proctoring, Postgres.

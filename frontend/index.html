@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Recruitment Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0f1220;--card:#181c30;--tx:#e8eaf6;--mut:#9aa0c3;--ac:#6c7bff;--ok:#3ecf8e;--bad:#ff6b6b}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+header{padding:12px 24px;border-bottom:1px solid #2a2f4d;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+header h1{margin:0;font-size:20px}
+.auth{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.auth input{padding:7px;border-radius:6px;border:1px solid #2a2f4d;background:#10132a;color:var(--tx);width:170px}
+nav{display:flex;gap:8px;padding:12px 24px;flex-wrap:wrap}nav button{background:var(--card);color:var(--tx);border:0;padding:10px 18px;border-radius:8px;cursor:pointer}
+nav button.on{background:var(--ac)}main{padding:0 24px 40px;max-width:1100px;margin:auto}
+.card{background:var(--card);border-radius:12px;padding:18px;margin:12px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+textarea{width:100%;min-height:140px;background:#10132a;color:var(--tx);border:1px solid #2a2f4d;border-radius:8px;padding:10px}
+button.p{background:var(--ac);color:#fff;border:0;padding:10px 18px;border-radius:8px;cursor:pointer;margin:6px 6px 0 0}
+button.p:disabled{opacity:.5;cursor:not-allowed}button.s{background:#2a2f4d;color:var(--tx);border:0;padding:7px 12px;border-radius:6px;cursor:pointer}
+.big{font-size:44px;font-weight:800}.chip{display:inline-block;padding:3px 10px;border-radius:99px;margin:3px;font-size:13px}
+.ok{background:#1d4d3a;color:var(--ok)}.bad{background:#512a2a;color:var(--bad)}.mut{color:var(--mut)}
+.bar{height:8px;background:#2a2f4d;border-radius:4px}.bar>i{display:block;height:8px;background:var(--ac);border-radius:4px}
+.hide{display:none}#chat{max-height:380px;overflow:auto}#chat .m{margin:8px 0;padding:10px;border-radius:8px}.ai{background:#232850}.me{background:#1d3a52;text-align:right}
+.coach{background:#2b2742;font-size:14px}
+#ans{min-height:90px;margin-top:10px}
+table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid #2a2f4d;text-align:left;font-size:14px}
+.late{color:var(--bad)}.warn{color:#ffb454}
+.rw{border-left:3px solid var(--ac);padding:6px 12px;margin:10px 0;background:#10132a;border-radius:0 8px 8px 0}
+</style></head><body>
+<header>
+ <h1>🧠 AI Recruitment Intelligence</h1>
+ <div class="auth">
+  <span id="authOut"><input id="em" type="email" placeholder="email"> <input id="pw" type="password" placeholder="password (6+ chars)">
+   <button class="s" onclick="auth('login')">Log in</button> <button class="s" onclick="auth('register')">Register</button></span>
+  <span id="authIn" class="hide"><span class="mut" id="who"></span> <button class="s" onclick="logout()">Log out</button></span>
+ </div>
+</header>
+<nav>
+ <button class="on" data-t="inputs">1. Resume &amp; Job</button><button data-t="dash">2. Dashboard</button>
+ <button data-t="intv">3. AI Interview</button><button data-t="bulk">4. Bulk Ranking</button><button data-t="hist">5. My History</button>
+</nav>
+<main>
+<section id="inputs" class="tab">
+ <div class="grid">
+  <div class="card"><h3>Resume</h3><input type="file" id="file" accept=".pdf,.docx,.txt"><textarea id="resume" placeholder="…or paste resume text"></textarea></div>
+  <div class="card"><h3>Job Description</h3><input id="role" placeholder="Role title" style="width:100%;margin-bottom:8px;padding:8px"><textarea id="jd" placeholder="Paste job description"></textarea></div>
+ </div>
+ <button class="p" onclick="analyze()">Analyze</button><button class="p" onclick="rewrite()">✨ Rewrite resume for this job</button><span id="st" class="mut"></span>
+ <div id="rw" class="card hide"></div>
+</section>
+
+<section id="dash" class="tab hide">
+ <div class="grid">
+  <div class="card"><div class="mut">ATS Score</div><div class="big" id="ats">–</div><div id="tips" class="mut"></div></div>
+  <div class="card"><div class="mut">Career Readiness</div><div class="big" id="ready">–</div><div id="level"></div><canvas id="radar" height="200"></canvas></div>
+ </div>
+ <div class="grid">
+  <div class="card"><h3>Skill Gap</h3><div class="mut">Matched</div><div id="matched"></div><div class="mut">Missing</div><div id="missing"></div>
+   <button class="p" onclick="plan()">Generate learning plan</button><div id="plan"></div></div>
+  <div class="card"><h3>ATS Breakdown</h3><canvas id="brk" height="200"></canvas></div>
+ </div>
+ <div class="card"><h3>Job Matches</h3><div id="jobs"></div></div>
+</section>
+
+<section id="intv" class="tab hide">
+ <div class="card">
+  <select id="diff"><option>easy</option><option selected>medium</option><option>hard</option></select>
+  <button class="p" id="startBtn" onclick="startI()">Start interview</button>
+  <label class="mut"><input type="checkbox" id="voice" checked> Voice mode</label>
+  <label class="mut"><input type="checkbox" id="star" checked> STAR coach</label>
+  <div style="margin-top:8px"><span id="prog" class="mut"></span> &nbsp; <span id="timer" class="mut"></span> &nbsp; <span id="warn" class="warn"></span></div>
+  <div id="chat"></div>
+  <textarea id="ans" class="hide" placeholder="Type your answer, or press Record…"></textarea>
+  <button class="p hide" id="mic" onclick="toggleRec()">🎤 Record answer</button>
+  <button class="p hide" id="send" onclick="sendA()">Submit answer</button>
+ </div>
+ <div class="card hide" id="rep"></div>
+</section>
+
+<section id="bulk" class="tab hide">
+ <div class="card"><h3>Rank many resumes against the job description</h3>
+  <p class="mut">Uses the job description from step 1. Upload up to 20 files (.pdf, .docx, .txt).</p>
+  <input type="file" id="bfiles" multiple accept=".pdf,.docx,.txt"> <button class="p" onclick="rankAll()">Rank resumes</button>
+  <div id="bres"></div></div>
+</section>
+
+<section id="hist" class="tab hide">
+ <div class="card"><h3>Your interview history</h3><div id="hmsg" class="mut"></div><canvas id="histc" height="120"></canvas><div id="htab"></div></div>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id),API="";
+let D=null,SID=null,charts={},ivScore=null,busy=false,active=false,curQ="",qStart=0,tabSwitches=0,log=[],stats={wpm:[],fillers:0},lastReport=null,lastSecs=null;
+let mr=null,chunks=[],recording=false,recT0=0;
+const LIMIT=120;
+
+/* ---------- tabs ---------- */
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+ document.querySelectorAll("nav button").forEach(x=>x.classList.remove("on"));b.classList.add("on");
+ document.querySelectorAll(".tab").forEach(t=>t.classList.add("hide"));$(b.dataset.t).classList.remove("hide");
+ if(b.dataset.t==="hist")loadHist()});
+
+/* ---------- safe API helpers ---------- */
+const authH=()=>{const t=localStorage.getItem("tok");return t?{Authorization:"Bearer "+t}:{}};
+async function parse(r){
+ const t=await r.text();let j;
+ try{j=JSON.parse(t)}catch{throw "Server error "+r.status+": "+t.slice(0,200)+" (see the uvicorn terminal)"}
+ if(!r.ok)throw (typeof j.detail==="string"?j.detail:JSON.stringify(j.detail))||"Error";
+ return j}
+const post=(u,b)=>fetch(API+u,{method:"POST",headers:{"Content-Type":"application/json",...authH()},body:JSON.stringify(b)}).then(parse);
+const get=u=>fetch(API+u,{headers:authH()}).then(parse);
+const esc=s=>String(s??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+/* ---------- login ---------- */
+function paintAuth(){const em=localStorage.getItem("em");
+ $("authOut").classList.toggle("hide",!!em);$("authIn").classList.toggle("hide",!em);$("who").textContent=em||""}
+async function auth(kind){
+ try{const j=await post("/api/auth/"+kind,{email:$("em").value.trim(),password:$("pw").value});
+  localStorage.setItem("tok",j.token);localStorage.setItem("em",j.email);$("pw").value="";paintAuth()}
+ catch(e){alert(e)}}
+function logout(){localStorage.removeItem("tok");localStorage.removeItem("em");paintAuth()}
+paintAuth();
+
+/* ---------- resume upload ---------- */
+$("file").onchange=async e=>{
+ const file=e.target.files[0];if(!file)return;
+ const f=new FormData();f.append("file",file);$("st").textContent="Reading resume…";
+ try{const j=await fetch("/api/parse-resume",{method:"POST",body:f}).then(parse);
+  $("resume").value=j.text;$("st").textContent="Resume loaded ✔"}
+ catch(x){$("st").textContent=x}};
+
+/* ---------- dashboard ---------- */
+const chips=(a,c)=>a.map(s=>`<span class="chip ${c}">${esc(s)}</span>`).join("")||"<span class=mut>none</span>";
+function draw(id,cfg){if(charts[id])charts[id].destroy();charts[id]=new Chart($(id),cfg)}
+function render(){const a=D.ats,r=D.readiness;$("ats").textContent=a.score+"/100";$("ready").textContent=r.overall+"%";$("level").textContent=r.level;
+ $("tips").innerHTML=a.tips.map(t=>"• "+esc(t)).join("<br>");$("matched").innerHTML=chips(a.skill_gap.matched,"ok");$("missing").innerHTML=chips(a.skill_gap.missing,"bad");
+ draw("radar",{type:"radar",data:{labels:Object.keys(r.dimensions),datasets:[{data:Object.values(r.dimensions),backgroundColor:"rgba(108,123,255,.3)",borderColor:"#6c7bff"}]},options:{scales:{r:{min:0,max:100}},plugins:{legend:{display:false}}}});
+ draw("brk",{type:"bar",data:{labels:Object.keys(a.breakdown),datasets:[{data:Object.values(a.breakdown),backgroundColor:"#6c7bff"}]},options:{plugins:{legend:{display:false}}}});
+ $("jobs").innerHTML=D.job_matches.map(j=>`<div style="margin:10px 0"><b>${esc(j.title)}</b> <span class=mut>${j.match}%</span><div class=bar><i style="width:${j.match}%"></i></div><small class=mut>Missing: ${esc(j.missing.join(", "))||"—"}</small></div>`).join("")}
+async function analyze(){const resume=$("resume").value,job_description=$("jd").value;
+ if(!resume||!job_description)return $("st").textContent="Add both resume and job description";
+ $("st").textContent="Analyzing…";
+ try{D=await post("/api/analyze",{resume,job_description});render();$("st").textContent="Done";document.querySelector('[data-t=dash]').click()}
+ catch(e){$("st").textContent=e}}
+async function plan(){$("plan").textContent="Generating…";
+ try{const p=await post("/api/learning-plan",{resume:$("resume").value,job_description:$("jd").value});
+  $("plan").innerHTML=p.weeks.map(w=>`<p><b>Week ${w.week}: ${esc(w.focus)}</b><br>${w.tasks.map(esc).join("<br>")}</p>`).join("")}
+ catch(e){$("plan").textContent=e}}
+
+/* ---------- resume rewriter ---------- */
+async function rewrite(){
+ $("st").textContent="Rewriting…";
+ try{const r=await post("/api/rewrite-resume",{resume:$("resume").value,job_description:$("jd").value});
+  $("rw").classList.remove("hide");
+  $("rw").innerHTML=`<h3>Suggested summary</h3><p>${esc(r.summary)}</p><h3>Improved bullets</h3>`+
+   (r.improvements||[]).map(i=>`<div class="rw"><div class="mut">Before: ${esc(i.original)}</div><div><b>After:</b> ${esc(i.improved)}</div><small class="mut">${esc(i.why)}</small></div>`).join("")+
+   `<h3>Keywords to add (only if true for you)</h3>${chips(r.keywords_to_add||[],"ok")}`;
+  $("st").textContent="Done"}
+ catch(e){$("st").textContent=e}}
+
+/* ---------- interview ---------- */
+const add=(c,t)=>{$("chat").insertAdjacentHTML("beforeend",`<div class="m ${c}">${t}</div>`);$("chat").lastChild.scrollIntoView()};
+const showInput=on=>["ans","send","mic"].forEach(i=>$(i).classList.toggle("hide",!on));
+const mmss=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+
+setInterval(()=>{ // per-question timer
+ if(!active||!qStart){$("timer").textContent="";return}
+ const s=Math.floor((Date.now()-qStart)/1000);
+ $("timer").textContent="⏱ "+mmss(s)+" / "+mmss(LIMIT);$("timer").classList.toggle("late",s>LIMIT)},1000);
+
+document.addEventListener("visibilitychange",()=>{ // basic anti-cheating
+ if(document.hidden&&active){tabSwitches++;$("warn").textContent="⚠ Tab switches detected: "+tabSwitches}});
+
+function speak(t){
+ return new Promise(res=>{
+  if(!$("voice").checked||!window.speechSynthesis)return res();
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t);u.onend=u.onerror=res;speechSynthesis.speak(u)})}
+
+async function ask(q,n,total){
+ curQ=q;qStart=0;$("prog").textContent=`Question ${n} of ${total}`;
+ add("ai",`<b>Q${n}/${total}:</b> ${esc(q)}`);
+ await speak(q);qStart=Date.now();
+ if($("voice").checked&&!recording)toggleRec()}   // auto-start recording after the AI finishes speaking
+
+/* Whisper recording: works in every modern browser */
+async function toggleRec(){
+ if(recording){mr.stop();return}
+ if(!navigator.mediaDevices||!window.MediaRecorder)return alert("This browser cannot record audio. Type your answer instead.");
+ try{
+  speechSynthesis.cancel();
+  const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+  mr=new MediaRecorder(stream);chunks=[];
+  mr.ondataavailable=e=>chunks.push(e.data);
+  mr.onstart=()=>{recording=true;recT0=Date.now();$("mic").textContent="⏹ Stop & transcribe"};
+  mr.onstop=async()=>{
+   recording=false;stream.getTracks().forEach(t=>t.stop());$("mic").textContent="🎤 Record answer";
+   lastSecs=(Date.now()-recT0)/1000;
+   const fd=new FormData();fd.append("file",new Blob(chunks,{type:mr.mimeType||"audio/webm"}),"answer.webm");
+   $("mic").disabled=true;$("ans").placeholder="Transcribing…";
+   try{const j=await fetch("/api/transcribe",{method:"POST",body:fd,headers:authH()}).then(parse);
+    $("ans").value=($("ans").value+" "+j.text).trim()}
+   catch(e){alert(e)}
+   $("mic").disabled=false;$("ans").placeholder="Type your answer, or press Record…"};
+  mr.start()}
+ catch(e){alert("Microphone error: "+e.message)}}
+
+async function startI(){
+ if(!$("resume").value.trim()||!$("jd").value.trim())return alert("Complete step 1 first: add your resume and job description.");
+ $("chat").innerHTML="";$("rep").classList.add("hide");$("startBtn").disabled=true;busy=true;
+ log=[];stats={wpm:[],fillers:0};tabSwitches=0;$("warn").textContent="";lastSecs=null;
+ try{
+  const r=await post("/api/interview/start",{resume:$("resume").value,job_description:$("jd").value,role:$("role").value||"the role",difficulty:$("diff").value});
+  SID=r.session_id;active=true;showInput(true);busy=false;await ask(r.question,r.number,r.total)}
+ catch(e){alert(e)}
+ busy=false;$("startBtn").disabled=false}
+
+async function sendA(){
+ if(recording)return alert("Press Stop & transcribe first, then submit.");
+ const a=$("ans").value.trim();if(!a||busy)return;
+ const secs=lastSecs;lastSecs=null;const q=curQ;
+ busy=true;$("send").disabled=true;$("ans").value="";add("me",esc(a));
+ const sp=post("/api/speech/analyze",{text:a,seconds:secs}).catch(()=>null);
+ if($("star").checked)post("/api/star/check",{question:q,answer:a}).then(s=>{
+  if(!s||!s.is_behavioural)return;
+  const f=k=>s[k]?"✅":"❌";
+  add("coach",`<b>STAR coach:</b> S ${f("situation")} T ${f("task")} A ${f("action")} R ${f("result")} — ${esc(s.tip||"")}`)}).catch(()=>{});
+ try{
+  const r=await post("/api/interview/answer",{session_id:SID,answer:a});
+  const s=Object.entries(r.scores||{}).map(([k,v])=>`${k}: ${v}/10`).join(" · ");
+  const x=await sp;let speech="";
+  if(x){stats.fillers+=x.filler_total;if(x.wpm)stats.wpm.push(x.wpm);
+   speech=`<br><small class=mut>🗣 ${x.words} words${x.wpm?` · ${x.wpm} wpm (${x.pace})`:""} · ${x.filler_total} filler${x.filler_total===1?"":"s"}${x.filler_total?" ("+Object.keys(x.fillers).join(", ")+")":""}</small>`}
+  log.push({q,a,feedback:r.feedback||"",scores:r.scores||{}});
+  add("ai",`<small class=mut>${esc(s)}</small><br>${esc(r.feedback||"")}${speech}`);
+  if(r.finished){active=false;showInput(false);$("prog").textContent="Interview complete";await final()}
+  else{busy=false;await ask(r.next_question,r.number,r.total)}}
+ catch(e){alert(e)}
+ busy=false;$("send").disabled=false}
+
+async function final(){
+ try{
+  const r=await get("/api/interview/report/"+SID);ivScore=r.overall;$("rep").classList.remove("hide");
+  const L=a=>(a||[]).map(esc).join("<br>");
+  const wpm=stats.wpm.length?Math.round(stats.wpm.reduce((a,b)=>a+b,0)/stats.wpm.length):null;
+  lastReport={role:$("role").value||"",overall:r.overall,recommendation:r.recommendation,strengths:r.strengths||[],weaknesses:r.weaknesses||[],next_steps:r.next_steps||[],wpm,fillers:stats.fillers,tab_switches:tabSwitches,transcript:log};
+  $("rep").innerHTML=`<h3>Interview Report: ${r.overall}/100 — ${esc(r.recommendation)}</h3>
+   <p class="mut">Delivery: ${wpm?wpm+" words/min":"n/a (type or record your answers)"} · ${stats.fillers} filler words · ${tabSwitches} tab switches</p>
+   <b>Strengths</b><br>${L(r.strengths)}<br><b>Weaknesses</b><br>${L(r.weaknesses)}<br><b>Next steps</b><br>${L(r.next_steps)}
+   <p><button class="p" onclick="pdf()">⬇ Download PDF report</button><span id="saved" class="mut"></span></p>`;
+  if(localStorage.getItem("tok")){
+   try{await post("/api/history/save",{role:lastReport.role,score:r.overall,recommendation:r.recommendation,wpm,fillers:stats.fillers,tab_switches:tabSwitches,report:lastReport});$("saved").textContent=" Saved to your history ✔"}
+   catch(e){$("saved").textContent=" Could not save: "+e}}
+  else $("saved").textContent=" Log in (top right) to save results to your history.";
+  if(D){D.readiness=await post("/api/readiness",{ats:D.ats.score,match:D.ats.skill_gap.coverage,interview:ivScore,resume:$("resume").value});render()}}
+ catch(e){alert(e)}}
+
+async function pdf(){
+ const res=await fetch("/api/report/pdf",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(lastReport)});
+ if(!res.ok)return alert("PDF failed: "+(await res.text()).slice(0,200));
+ const a=document.createElement("a");a.href=URL.createObjectURL(await res.blob());a.download="interview-report.pdf";a.click()}
+
+/* ---------- bulk ranking ---------- */
+async function rankAll(){
+ const files=$("bfiles").files,jd=$("jd").value.trim();
+ if(!jd)return alert("Add a job description in step 1 first.");
+ if(!files.length)return alert("Choose one or more resume files.");
+ const f=new FormData();f.append("job_description",jd);[...files].forEach(x=>f.append("files",x));
+ $("bres").textContent="Ranking…";
+ try{const j=await fetch("/api/bulk-rank",{method:"POST",body:f}).then(parse);
+  $("bres").innerHTML=`<table><tr><th>#</th><th>Resume</th><th>Match</th><th>Matched keywords</th><th>Missing</th></tr>`+
+   j.results.map(r=>`<tr><td>${r.rank}</td><td>${esc(r.name)}</td><td><b>${r.score}%</b><div class=bar><i style="width:${r.score}%"></i></div></td><td>${chips(r.matched,"ok")}</td><td>${chips(r.missing,"bad")}</td></tr>`).join("")+`</table>`}
+ catch(e){$("bres").textContent=e}}
+
+/* ---------- history ---------- */
+async function loadHist(){
+ if(!localStorage.getItem("tok")){$("hmsg").textContent="Log in (top right) to see your interview history.";$("htab").innerHTML="";return}
+ try{const j=await get("/api/history");const it=j.items;
+  $("hmsg").textContent=it.length?"":"No saved interviews yet. Finish one while logged in.";
+  if(it.length)draw("histc",{type:"line",data:{labels:it.map((_,i)=>"#"+(i+1)),datasets:[{label:"Score",data:it.map(x=>x.score),borderColor:"#6c7bff",tension:.3}]},options:{scales:{y:{min:0,max:100}}}});
+  $("htab").innerHTML=it.length?`<table><tr><th>Date</th><th>Role</th><th>Score</th><th>Result</th><th>WPM</th><th>Fillers</th><th>Tab switches</th></tr>`+
+   it.slice().reverse().map(x=>`<tr><td>${esc(x.created.slice(0,10))}</td><td>${esc(x.role)}</td><td>${x.score}</td><td>${esc(x.recommendation)}</td><td>${x.wpm??"–"}</td><td>${x.fillers}</td><td>${x.tab_switches}</td></tr>`).join("")+`</table>`:""}
+ catch(e){$("hmsg").textContent=e}}
+</script></body></html>

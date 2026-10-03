@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pdfplumber
+python-docx
+scikit-learn
+anthropic
+python-dotenv
+pyjwt
+reportlab

@@ -1,0 +1,134 @@
+/* AI Interview frontend. Include with <script src="interview.js"></script>
+   Needs in your HTML (adjust IDs to match yours):
+     <select id="difficulty">  <button id="startBtn">  <input type="checkbox" id="voiceMode">
+     <div id="interviewPanel"></div>
+   Resume text + job description come from step 1: set
+     window.appState = { resumeText: "...", jobDescription: "..." }
+*/
+const API = "/api/interview";
+let sessionId = null, recognition = null, listening = false;
+
+// Never call res.json() blindly: read text first, so "Internal Server Error" shows a clear message.
+async function api(path, body) {
+  const res = await fetch(API + path, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  });
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); }
+  catch { throw new Error(`Server error ${res.status}: ${text.slice(0, 200)} (check the uvicorn terminal)`); }
+  if (!res.ok) throw new Error(data.detail || "Request failed");
+  return data;
+}
+
+const $ = (id) => document.getElementById(id);
+const voiceOn = () => $("voiceMode") && $("voiceMode").checked;
+
+function speak(text) {
+  return new Promise((resolve) => {
+    if (!voiceOn() || !window.speechSynthesis) return resolve();
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.onend = u.onerror = resolve;
+    speechSynthesis.speak(u);
+  });
+}
+
+function addMsg(who, text) {
+  const d = document.createElement("div");
+  d.style.cssText = `margin:8px 0;padding:10px 14px;border-radius:10px;max-width:80%;
+    ${who === "ai" ? "background:#1e1e3f;" : "background:#2d3a8c;margin-left:auto;"}`;
+  d.textContent = (who === "ai" ? "🤖 " : "🧑 ") + text;
+  $("chatLog").appendChild(d);
+  d.scrollIntoView({ behavior: "smooth" });
+}
+
+function buildUI() {
+  $("interviewPanel").innerHTML = `
+    <div id="progress" style="margin:10px 0;opacity:.8"></div>
+    <div id="chatLog" style="max-height:340px;overflow:auto"></div>
+    <textarea id="answerBox" rows="3" style="width:100%;margin-top:10px;padding:8px" placeholder="Type or use the mic..."></textarea>
+    <div style="margin-top:8px;display:flex;gap:8px">
+      <button id="micBtn">🎤 Speak</button>
+      <button id="sendBtn">Send answer</button>
+      <button id="endBtn">End interview</button>
+    </div>
+    <div id="report"></div>`;
+  $("micBtn").onclick = toggleMic;
+  $("sendBtn").onclick = sendAnswer;
+  $("endBtn").onclick = finishInterview;
+}
+
+function setupMic() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { $("micBtn").disabled = true; $("micBtn").title = "Use Chrome/Edge for voice input"; return; }
+  recognition = new SR();
+  recognition.lang = "en-US"; recognition.continuous = true; recognition.interimResults = true;
+  let base = "";
+  recognition.onstart = () => { base = $("answerBox").value; listening = true; $("micBtn").textContent = "⏹ Stop"; };
+  recognition.onresult = (e) => {
+    let t = ""; for (const r of e.results) t += r[0].transcript;
+    $("answerBox").value = (base + " " + t).trim();
+  };
+  recognition.onend = () => { listening = false; $("micBtn").textContent = "🎤 Speak"; };
+}
+
+function toggleMic() {
+  if (!recognition) return;
+  speechSynthesis.cancel();
+  listening ? recognition.stop() : recognition.start();
+}
+
+async function startInterview() {
+  const st = window.appState || {};
+  try {
+    $("startBtn").disabled = true;
+    buildUI(); setupMic();
+    const d = await api("/start", {
+      resume_text: st.resumeText || "", job_description: st.jobDescription || "",
+      difficulty: $("difficulty") ? $("difficulty").value : "medium", total_questions: 6,
+    });
+    sessionId = d.session_id;
+    showQuestion(d.question, d.number, d.total);
+  } catch (e) { alert(e.message); $("startBtn").disabled = false; }
+}
+
+async function showQuestion(q, n, total) {
+  $("progress").textContent = `Question ${n} of ${total}`;
+  addMsg("ai", q);
+  await speak(q);
+}
+
+async function sendAnswer() {
+  const ans = $("answerBox").value.trim();
+  if (!ans) return;
+  if (listening) recognition.stop();
+  $("answerBox").value = ""; $("sendBtn").disabled = true;
+  addMsg("me", ans);
+  try {
+    const d = await api("/answer", { session_id: sessionId, answer: ans });
+    addMsg("ai", `Score ${d.score}/10 — ${d.feedback}`);
+    if (d.finished) return finishInterview();
+    await showQuestion(d.next_question, d.number, d.total);
+  } catch (e) { alert(e.message); }
+  $("sendBtn").disabled = false;
+}
+
+async function finishInterview() {
+  if (!sessionId) return;
+  try {
+    $("report").innerHTML = "<p>Generating report...</p>";
+    const r = await api("/finish", { session_id: sessionId });
+    const li = (a) => (a || []).map((x) => `<li>${x}</li>`).join("");
+    $("report").innerHTML = `
+      <h3>Result: ${r.overall_score}/100 — ${r.recommendation}</h3>
+      <p>${r.summary}</p>
+      <b>Strengths</b><ul>${li(r.strengths)}</ul>
+      <b>Weaknesses</b><ul>${li(r.weaknesses)}</ul>`;
+    sessionId = null; $("startBtn").disabled = false;
+  } catch (e) { alert(e.message); }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if ($("startBtn")) $("startBtn").onclick = startInterview;
+});
