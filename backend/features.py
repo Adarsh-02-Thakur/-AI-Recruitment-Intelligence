@@ -18,14 +18,16 @@ import time
 import hashlib
 import hmac
 import secrets
+import smtplib
 from collections import defaultdict, deque
+from email.message import EmailMessage
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from xml.sax.saxutils import escape as xml_escape
 
 import jwt
 import requests
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -68,6 +70,58 @@ def init_db():
         )
 
 
+# ───────────────────────── owner email alerts ─────────────────────────
+# .env settings (all optional; with no NOTIFY_TO nothing is sent):
+#   NOTIFY_TO=you@gmail.com
+#   RESEND_API_KEY=re_xxx             (recommended: HTTPS API, works on Render's free tier)
+#   NOTIFY_FROM=AI Recruitment <onboarding@resend.dev>
+# or SMTP fallback (blocked on many free hosts, fine locally):
+#   SMTP_HOST=smtp.gmail.com  SMTP_PORT=465  SMTP_USER=you@gmail.com  SMTP_PASS=<gmail app password>
+def client_ip(request: Request) -> str:
+    fwd = request.headers.get("x-forwarded-for", "")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def alert_args(kind: str, email: str, request: Request) -> tuple:
+    """Builds (subject, body). Never includes passwords or tokens."""
+    ist = timezone(timedelta(hours=5, minutes=30))
+    when = datetime.now(ist).strftime("%d %b %Y, %I:%M %p IST")
+    body = (f"{kind}\n\nUser:   {email}\nTime:   {when}\nIP:     {client_ip(request)}\n"
+            f"Device: {request.headers.get('user-agent', 'unknown')[:150]}\n")
+    return f"[AI Recruitment] {kind}: {email}", body
+
+
+def notify_owner(subject: str, body: str) -> None:
+    """Runs in the background and never raises: a mail problem must not break login."""
+    to = os.getenv("NOTIFY_TO")
+    if not to:
+        return
+    try:
+        key = os.getenv("RESEND_API_KEY")
+        if key:
+            r = requests.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {key}"},
+                json={"from": os.getenv("NOTIFY_FROM", "AI Recruitment <onboarding@resend.dev>"),
+                      "to": [to], "subject": subject, "text": body},
+                timeout=15)
+            if not r.ok:
+                log.warning("Resend error %s: %s", r.status_code, r.text[:200])
+            return
+        host = os.getenv("SMTP_HOST")
+        if host:
+            msg = EmailMessage()
+            msg["Subject"], msg["From"], msg["To"] = subject, os.getenv("SMTP_USER", ""), to
+            msg.set_content(body)
+            with smtplib.SMTP_SSL(host, int(os.getenv("SMTP_PORT", "465")), timeout=15) as s:
+                s.login(os.getenv("SMTP_USER", ""), os.getenv("SMTP_PASS", ""))
+                s.send_message(msg)
+    except Exception as e:  # noqa: BLE001
+        log.warning("Notification failed: %s", e)
+
+
 # ───────────────────────── authentication (JWT) ─────────────────────────
 def _hash(password: str, salt: str) -> str:
     return hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 200_000).hex()
@@ -95,7 +149,7 @@ def current_user(request: Request) -> dict:
 
 
 @router.post("/auth/register")
-def register(b: AuthReq):
+def register(b: AuthReq, request: Request, bg: BackgroundTasks):
     email = b.email.strip().lower()
     if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
         raise HTTPException(400, "Enter a valid email address.")
@@ -111,16 +165,18 @@ def register(b: AuthReq):
             uid = cur.lastrowid
     except sqlite3.IntegrityError:
         raise HTTPException(409, "That email is already registered. Try logging in.")
+    bg.add_task(notify_owner, *alert_args("New registration", email, request))
     return {"token": _make_token(uid, email), "email": email}
 
 
 @router.post("/auth/login")
-def login(b: AuthReq):
+def login(b: AuthReq, request: Request, bg: BackgroundTasks):
     email = b.email.strip().lower()
     with db() as c:
         u = c.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
     if not u or not hmac.compare_digest(u["pw"], _hash(b.password, u["salt"])):
         raise HTTPException(401, "Wrong email or password.")
+    bg.add_task(notify_owner, *alert_args("User login", email, request))
     return {"token": _make_token(u["id"], email), "email": email}
 
 
