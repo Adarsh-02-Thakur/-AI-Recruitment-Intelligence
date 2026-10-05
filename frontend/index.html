@@ -54,6 +54,7 @@ button.ghost{background:transparent;border:1px solid var(--bd);box-shadow:none}b
 a.l{color:#a78bfa;cursor:pointer;text-decoration:none;font-weight:600}a.l:hover{text-decoration:underline}
 .formside button.p{width:100%;margin:4px 0 10px}.or{text-align:center;color:var(--mut);font-size:12px;margin:6px 0}.foot{text-align:center;font-size:14px;color:var(--mut);margin-top:10px}
 @media(max-width:760px){.auth-wrap{grid-template-columns:1fr}.promo{display:none}.mbrand{display:block;font-size:24px;font-weight:800;margin-bottom:14px}.uchip #uchip{display:none}}
+.ck{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd);align-items:flex-start}.ck:last-child{border:0}.ck small{color:var(--mut);display:block}.ck .pt{margin-left:auto;font-weight:700;white-space:nowrap}.cb{margin:10px 0}.cb>div:first-child{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}
 </style></head><body>
 <div id="auth"><div class="auth-wrap">
  <div class="promo"><div class="logo">🧠</div><h1>RecruitAI</h1><p>Your AI-powered career copilot</p>
@@ -82,7 +83,7 @@ a.l{color:#a78bfa;cursor:pointer;text-decoration:none;font-weight:600}a.l:hover{
    <button class="p" id="b-reset" onclick="doReset()">Update password</button><div class="foot"><a class="l" onclick="view('login')">← Back to log in</a></div></div>
  </div></div></div>
 <div id="app" class="hide"><header><div class="brand">🧠 RecruitAI</div><div class="uchip"><span class="av" id="av">A</span><span id="uchip"></span><button class="p sm ghost" onclick="logout()">Logout</button></div></header>
-<nav><button class="on" data-t="inputs">1. Resume &amp; Job</button><button data-t="dash">2. Dashboard</button><button data-t="intv">3. AI Interview</button><button data-t="ask">4. Ask AI</button></nav>
+<nav><button class="on" data-t="inputs">1. Resume &amp; Job</button><button data-t="dash">2. Dashboard</button><button data-t="intv">3. AI Interview</button><button data-t="ask">4. Ask AI</button><button data-t="atsx">5. ATS Checker</button></nav>
 <main>
 <section id="inputs" class="tab">
  <div class="grid">
@@ -153,6 +154,26 @@ a.l{color:#a78bfa;cursor:pointer;text-decoration:none;font-weight:600}a.l:hover{
   <textarea id="aq" style="min-height:70px" placeholder="Type your question… (Enter = send, Shift+Enter = new line)"></textarea>
   <button class="p" onclick="askSend()">Send</button><button class="p" id="amic" onclick="askListen()">🎤 Speak</button>
   <div class="mut" style="font-size:12px;margin-top:6px">AI can make mistakes. Double-check important facts, especially medical, legal, financial or technical details.</div>
+ </div>
+</section>
+<section id="atsx" class="tab hide">
+ <div class="card"><b>📄 Resume ATS Score Analyzer</b> <span class="mut">— checks your resume the way applicant tracking systems read it</span>
+  <input type="file" id="atsfile" accept=".pdf,.docx,.txt" style="margin-top:10px">
+  <textarea id="atstext" placeholder="…or paste your resume text here"></textarea>
+  <textarea id="atsjd" style="min-height:90px;margin-top:8px" placeholder="(Optional) Paste a job description to score keyword match for that job"></textarea>
+  <button class="p" id="atsbtn" onclick="runATS()">Analyze resume</button>
+  <button class="p ghost" onclick="$('atstext').value=$('resume').value;$('atsjd').value=$('jd').value">Use resume from tab 1</button>
+ </div>
+ <div id="atsout" class="hide">
+  <div class="grid"><div class="card" style="text-align:center"><svg viewBox="0 0 120 120" width="190" height="190"><circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="10"/>
+    <circle id="ring" cx="60" cy="60" r="54" fill="none" stroke="#7c5cff" stroke-width="10" stroke-linecap="round" stroke-dasharray="339.3" stroke-dashoffset="339.3" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset 1s ease,stroke .5s"/>
+    <text id="ringtxt" x="60" y="68" text-anchor="middle" font-size="30" font-weight="800" fill="#fff">0</text></svg>
+    <div class="big" id="atsgrade" style="font-size:26px"></div><div class="mut" id="atsstats"></div></div>
+   <div class="card"><h3>Score by category</h3><div id="atscats"></div></div></div>
+  <div class="card"><h3>🔧 Biggest fixes (most points to gain)</h3><div id="atsfix"></div></div>
+  <div class="card"><h3>✅ Full checklist</h3><div id="atschecks"></div></div>
+  <div class="card"><h3>Skills detected</h3><div id="atsskills"></div></div>
+  <div class="mut" style="font-size:12.5px">How this works: a fixed 100-point rubric (format 20, contact 10, sections 15, content 25, skills 15, readability 10, dates 5). The same resume always gets the same score. Real ATS products (Workday, Greenhouse, Taleo…) don't publish their formulas, so treat this as a precise, explainable estimate of how ATS-friendly your resume is.</div>
  </div>
 </section>
 </main></div>
@@ -253,4 +274,17 @@ function logout(){setTok(null);location.reload()}
 document.addEventListener("keydown",e=>{if(e.key!=="Enter")return;const v=[...document.querySelectorAll(".view")].find(x=>!x.classList.contains("hide"));if(v&&!$("auth").classList.contains("hide")&&e.target.tagName==="INPUT"){const b=v.querySelector("button.p:not(.ghost)");b&&b.click()}});
 const _render=render;render=function(){_render();$("k1").textContent=D.ats.score;$("k2").textContent=(D.job_matches[0]?D.job_matches[0].match:0)+"%";$("k3").textContent=D.readiness.overall+"%";$("k4").textContent=ivScore!=null?Math.round(ivScore):"–"};
 (async()=>{const t=getTok();if(t){try{const r=await fetch("/api/account/me",{headers:{Authorization:"Bearer "+t}});if(r.ok){enterApp(await r.json());return}}catch{}setTok(null)}})();
+
+async function runATS(){const f=$("atsfile").files[0],t=$("atstext").value.trim();if(!f&&!t)return toast("Upload a resume or paste its text");
+ const fd=new FormData();if(f)fd.append("file",f);fd.append("text",t);fd.append("jd",$("atsjd").value);const b=$("atsbtn");b.disabled=true;b.textContent="Analyzing…";
+ try{const h={},tk=getTok();if(tk)h.Authorization="Bearer "+tk;const r=await fetch("/api/ats/analyze",{method:"POST",body:fd,headers:h});const x=await r.text();let j;try{j=JSON.parse(x)}catch{throw x}
+  if(!r.ok)throw (Array.isArray(j.detail)?j.detail.map(e=>e.msg).join(", "):j.detail||x);showATS(j)}catch(e){toast(String(e))}b.disabled=false;b.textContent="Analyze resume"}
+function showATS(j){$("atsout").classList.remove("hide");const col=j.score>=90?"#22d3ee":j.score>=75?"#34d399":j.score>=60?"#fbbf24":"#fb7185";
+ $("ring").style.stroke=col;$("ring").style.strokeDashoffset=339.3*(1-j.score/100);$("ringtxt").textContent=j.score;$("atsgrade").textContent=j.grade;
+ const st=j.stats;$("atsstats").textContent=`${st.words} words · ~${st.pages} page(s) · ${st.metrics} measurable results · ${st.action_verbs} action verbs`;
+ $("atscats").innerHTML=Object.entries(j.categories).map(([k,v])=>`<div class="cb"><div><span>${esc(k)}</span><b>${v.score}/${v.max}</b></div><div class="bar"><i style="width:${v.score/v.max*100}%"></i></div></div>`).join("");
+ $("atsfix").innerHTML=j.top_fixes.length?j.top_fixes.map(f=>`<div class="ck"><span>🔧</span><div><b>${esc(f.name)}</b><small>${esc(f.tip)}</small></div><span class="pt bad chip">+${f.lost}</span></div>`).join(""):"<span class=mut>Nothing to fix. Great resume!</span>";
+ const ic={pass:"✅",warn:"⚠️",fail:"❌"};
+ $("atschecks").innerHTML=j.checks.map(c=>`<div class="ck"><span>${ic[c.status]}</span><div><b>${esc(c.name)}</b> <span class="mut" style="font-size:12px">· ${esc(c.cat)}</span>${c.tip?`<small>${esc(c.tip)}</small>`:""}</div><span class="pt">${c.pts}/${c.max}</span></div>`).join("");
+ $("atsskills").innerHTML=j.skills.length?j.skills.map(x=>`<span class="chip ok">${esc(x)}</span>`).join(""):"<span class=mut>No recognised skills found</span>"}
 </script></body></html>

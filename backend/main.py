@@ -6,9 +6,11 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import pdfplumber, docx
 import scoring
+from ats_analyzer import router as ats_router
 from llm import ask_json
 
 from auth import router as auth_router
+app.include_router(ats_router)
 
 app = FastAPI(title="AI Recruitment Intelligence")
 app.include_router(auth_router)
