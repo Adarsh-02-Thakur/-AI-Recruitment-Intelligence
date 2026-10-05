@@ -1,20 +1,17 @@
 import io, uuid
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from auth import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import pdfplumber, docx
 import scoring
-from ats_analyzer import router as ats_router
 from llm import ask_json
-
 from auth import router as auth_router
-app.include_router(ats_router)
+from ats_analyzer import router as ats_router
 
 app = FastAPI(title="AI Recruitment Intelligence")
 app.include_router(auth_router)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.include_router(ats_router)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 JOBS = [  # replace with a database / job-board API (Adzuna, JSearch, etc.)
@@ -41,7 +38,8 @@ def extract_text(name: str, data: bytes) -> str:
 @app.post("/api/parse-resume")
 async def parse_resume(file: UploadFile = File(...)):
     text = extract_text(file.filename, await file.read())
-    if len(text.strip()) < 50: raise HTTPException(422, "Could not read text from this file (scanned PDF?).")
+    if len(text.strip()) < 50:
+        raise HTTPException(422, "Could not read text from this file (scanned PDF?).")
     return {"text": text}
 
 
@@ -95,7 +93,8 @@ class AnswerIn(BaseModel):
 @app.post("/api/interview/answer")
 def answer(body: AnswerIn):
     S = SESSIONS.get(body.session_id)
-    if not S: raise HTTPException(404, "Session not found")
+    if not S:
+        raise HTTPException(404, "Session not found")
     n = len(S["turns"]) + 1
     last = n >= MAX_Q
     history = "\n".join(f"Q: {t['q']}\nA: {t['a']}" for t in S["turns"])
@@ -117,7 +116,8 @@ def answer(body: AnswerIn):
 @app.get("/api/interview/report/{sid}")
 def report(sid: str):
     S = SESSIONS.get(sid)
-    if not S or not S["scores"]: raise HTTPException(404, "No completed answers")
+    if not S or not S["scores"]:
+        raise HTTPException(404, "No completed answers")
     keys = S["scores"][0].keys()
     avg = {k: round(sum(s[k] for s in S["scores"]) / len(S["scores"]), 1) for k in keys}
     overall = round(sum(avg.values()) / len(avg) * 10, 1)
@@ -137,6 +137,7 @@ class ReadyIn(BaseModel):
 def readiness(b: ReadyIn):
     return scoring.career_readiness(b.ats, b.match, b.interview, b.resume)
 
+
 class CoachIn(BaseModel):
     session_id: str
     message: str = ""
@@ -145,8 +146,10 @@ class CoachIn(BaseModel):
 @app.post("/api/interview/coach")
 def coach(b: CoachIn):
     S = SESSIONS.get(b.session_id)
-    if not S: raise HTTPException(404, "Session not found")
-    if S["ctx"].mode != "practice": raise HTTPException(403, "AI coach is only available in Practice mode")
+    if not S:
+        raise HTTPException(404, "Session not found")
+    if S["ctx"].mode != "practice":
+        raise HTTPException(403, "AI coach is only available in Practice mode")
     if b.message.strip():
         task = f'The candidate asks: "{b.message}". Answer helpfully and briefly, relating it to the interview.'
     else:
@@ -154,6 +157,7 @@ def coach(b: CoachIn):
     return ask_json("You are a supportive interview coach.",
                     f"Role: {S['ctx'].role}\nResume:\n{S['ctx'].resume[:2500]}\nCurrent interview question: {S['current']}\n{task}\n"
                     'Return {"reply": ""}')
+
 
 class ChatIn(BaseModel):
     messages: list[dict]
@@ -175,4 +179,7 @@ def chat_api(b: ChatIn):
     if b.use_context and b.resume.strip():
         system += f"\n\nCandidate resume:\n{b.resume[:3000]}\n\nTarget job description:\n{b.job_description[:2000]}"
     return {"reply": chat(system, msgs)}
+
+
+# Must stay LAST: serves the website from the frontend folder
 app.mount("/", StaticFiles(directory="../frontend", html=True), name="static")
