@@ -1,565 +1,256 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AI Recruitment Intelligence</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet"><title>AI Recruitment Intelligence</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-:root{
- --ink:#15183b;--ink2:#232857;--paper:#f3f5fb;--card:#fff;--line:#e3e7f3;--tx:#171a3d;--mut:#5d6486;
- --indigo:#4338ca;--violet:#7c3aed;--teal:#0b8f84;--coral:#e8453c;--amber:#ffb020;
- --good:#0f9d63;--mid:#b7791f;--low:#d93f4a;
- --disp:"Bricolage Grotesque","DM Sans",system-ui,sans-serif;--body:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;font-family:var(--body);background:var(--paper);color:var(--tx);-webkit-font-smoothing:antialiased;line-height:1.5}
+:root{--bg:#0a0820;--card:rgba(255,255,255,.06);--bd:rgba(255,255,255,.13);--tx:#f2f1ff;--mut:#a9a6d0;--ac:#7c5cff;--ac2:#ff5ca8;--ac3:#22d3ee;--ok:#34d399;--bad:#fb7185;--g:linear-gradient(135deg,#7c5cff,#ff5ca8)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;font-family:Poppins,"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--tx);overflow-x:hidden}
+body::before,body::after{content:"";position:fixed;width:55vmax;height:55vmax;border-radius:50%;filter:blur(100px);opacity:.33;z-index:-1;animation:float 18s ease-in-out infinite alternate}
+body::before{background:#7c5cff;top:-22vmax;left:-16vmax}body::after{background:#ff5ca8;bottom:-26vmax;right:-16vmax;animation-delay:-9s}
+@keyframes float{to{transform:translate(6vmax,5vmax) scale(1.12)}}
 .hide{display:none!important}.mut{color:var(--mut)}
-h1,h2,h3{font-family:var(--disp);margin:0;letter-spacing:-.01em}
-button{font-family:inherit}
-:focus-visible{outline:3px solid #a5b4fc;outline-offset:2px}
-
-/* ---------- buttons and fields ---------- */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;cursor:pointer;color:#fff;background:var(--indigo);font-weight:600;font-size:14px;padding:11px 18px;border-radius:10px;transition:background .15s,transform .15s}
-.btn:hover{background:#372ba8}.btn:active{transform:translateY(1px)}
-.btn:disabled{opacity:.55;cursor:not-allowed}
-.btn.coral{background:var(--coral)}.btn.coral:hover{background:#cc352d}
-.btn.violet{background:var(--violet)}.btn.violet:hover{background:#6a2bd6}
-.btn.teal{background:var(--teal)}.btn.teal:hover{background:#087a70}
-.btn.line{background:#fff;color:var(--tx);border:1px solid var(--line)}.btn.line:hover{background:#f6f7fd}
-.btn.sm{padding:7px 12px;font-size:13px;border-radius:8px}
-.btn.busy::after{content:"";width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-input,select,textarea{font-family:inherit;font-size:14px;color:var(--tx);background:#fff;border:1px solid #d3d9ee;border-radius:10px;padding:11px 13px;width:100%}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--indigo);box-shadow:0 0 0 3px rgba(67,56,202,.18)}
-select{width:auto}textarea{min-height:170px;resize:vertical;line-height:1.5}
-input[type=checkbox]{width:auto;accent-color:var(--violet)}
-input[type=file]{padding:8px;background:#f8f9fd}
-input[type=file]::file-selector-button{border:0;background:var(--ink);color:#fff;padding:7px 12px;border-radius:7px;margin-right:10px;cursor:pointer;font-family:inherit;font-weight:600}
-label.chk{display:inline-flex;align-items:center;gap:7px;font-size:14px;color:var(--mut);font-weight:500}
-
-/* ---------- login page ---------- */
-#auth{min-height:100vh;display:grid;grid-template-columns:1.15fr 1fr}
-.stage{position:relative;overflow:hidden;background:var(--indigo);color:#fff;display:flex;align-items:center;padding:56px}
-.shape{position:absolute}
-.s-circle{width:420px;height:420px;border-radius:50%;background:var(--coral);right:-130px;top:-140px}
-.s-quarter{width:320px;height:320px;border-radius:320px 0 0 0;background:var(--teal);right:0;bottom:0}
-.s-pill{width:240px;height:92px;border-radius:92px;background:var(--amber);left:-70px;bottom:90px;transform:rotate(-24deg)}
-.s-ring{width:200px;height:200px;border-radius:50%;border:34px solid var(--violet);left:46%;top:-70px}
-.stage-in{position:relative;z-index:1;max-width:520px}
-.brand{display:flex;align-items:center;gap:12px;font-family:var(--disp);font-weight:700;font-size:19px}
-.logo{width:40px;height:40px;border-radius:11px;background:#fff;color:var(--indigo);display:grid;place-items:center;font-family:var(--disp);font-weight:800;font-size:16px}
-.stage h1{font-size:46px;line-height:1.05;font-weight:800;margin:40px 0 14px;max-width:470px}
-.stage p{font-size:17px;max-width:440px;color:#e3e6ff;margin:0 0 34px}
-.scorecard{background:#fff;color:var(--tx);border-radius:20px;padding:20px 22px;max-width:440px;box-shadow:0 30px 60px -28px rgba(10,10,60,.7)}
-.sc-q{font-family:var(--disp);font-weight:700;font-size:18px;line-height:1.3}
-.wave{display:flex;align-items:center;gap:3px;height:46px;margin:16px 0}
-.wave i{flex:1;max-width:6px;height:var(--h);border-radius:3px;background:var(--violet);transform-origin:center;animation:pulse 1.2s ease-in-out infinite;animation-delay:var(--d)}
-@keyframes pulse{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
-.sc-tags{display:flex;flex-wrap:wrap;gap:8px}
-.tag{padding:5px 11px;border-radius:99px;font-size:13px;font-weight:700}
-.tg1{background:#dcf5e9;color:#0b6b43}.tg2{background:#e8e0ff;color:#4c1d95}.tg3{background:#fff0c9;color:#7a4b00}
-.formside{display:grid;place-items:center;padding:32px;background:#fff}
-.acard{width:100%;max-width:400px}
-.acard h2{font-size:30px;font-weight:800;margin-bottom:6px}
-.acard .sub{color:var(--mut);margin:0 0 24px}
-.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--paper);border-radius:12px;padding:4px;margin-bottom:26px}
-.seg button{border:0;background:transparent;color:var(--mut);padding:10px;border-radius:9px;font-weight:700;cursor:pointer;font-size:14px}
-.seg button.on{background:#fff;color:var(--indigo);box-shadow:0 1px 3px rgba(20,24,60,.15)}
-.field{margin-bottom:16px}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}
-.pw{position:relative}.pw input{padding-right:62px}
-.pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--indigo);font-weight:700;font-size:13px;cursor:pointer;padding:8px}
-.err{color:var(--low);font-size:13px;font-weight:600;min-height:20px;margin:2px 0 10px}
-.acard .btn{width:100%;padding:13px}
-.note{font-size:12.5px;color:var(--mut);margin-top:18px;line-height:1.5}
-
-/* ---------- app shell ---------- */
-#app{display:grid;grid-template-columns:252px 1fr;min-height:100vh}
-.side{position:sticky;top:0;height:100vh;background:var(--ink);color:#fff;padding:22px 14px;display:flex;flex-direction:column}
-.side .brand{padding:0 8px 22px;font-size:16px;line-height:1.15}.side .logo{width:36px;height:36px;font-size:14px}
-.nav{position:relative;display:flex;align-items:center;gap:12px;width:100%;border:0;background:transparent;color:#b9bfe6;font-weight:600;font-size:14px;padding:10px 12px;margin:2px 0;border-radius:10px;cursor:pointer;text-align:left}
-.nav .ico{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:rgba(255,255,255,.07);color:#fff;flex:none}
-.nav:hover{background:rgba(255,255,255,.06);color:#fff}
-.nav.on{background:rgba(255,255,255,.1);color:#fff}
-.nav.on .ico{background:var(--c)}
-.nav.on::before{content:"";position:absolute;left:-14px;top:9px;bottom:9px;width:4px;border-radius:0 4px 4px 0;background:var(--c)}
-.user{margin-top:auto;display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:rgba(255,255,255,.07)}
-.av{width:36px;height:36px;border-radius:50%;background:var(--coral);display:grid;place-items:center;font-family:var(--disp);font-weight:800;flex:none}
-.uinfo{min-width:0;flex:1;font-size:13px}.uinfo b{display:block}.uinfo span{display:block;color:#aab1db;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.user button{border:0;background:rgba(255,255,255,.1);color:#fff;border-radius:8px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer;flex:none}
-.user button:hover{background:rgba(255,255,255,.2)}
-.content{padding:30px 36px 70px;max-width:1260px;width:100%}
-.page-h{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
-.page-h h1{font-size:32px;font-weight:800}.page-h p{margin:4px 0 0;color:var(--mut)}
-.row-btn{display:flex;gap:10px;flex-wrap:wrap}
-
-/* ---------- cards and dashboard ---------- */
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin:14px 0}
-.card h3{font-size:18px;font-weight:700;margin-bottom:12px}
-.card .hint{color:var(--mut);font-size:13.5px;margin:-6px 0 12px}
-.grid{display:grid;gap:14px}.g2{grid-template-columns:repeat(auto-fit,minmax(330px,1fr))}.g4{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-.g21{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)}
-.grid>.card{margin:0}
-.tile{position:relative;border-radius:18px;padding:18px 20px;color:#fff;min-height:138px;display:flex;flex-direction:column;justify-content:space-between}
-.tile .top{display:flex;justify-content:space-between;align-items:flex-start}
-.tile .l{font-weight:700;font-size:14px}
-.tile .ic{opacity:.9}
-.tile .v{font-family:var(--disp);font-size:44px;font-weight:800;line-height:1;letter-spacing:-.02em}
-.tile .v small{font-size:17px;font-weight:600;opacity:.8;margin-left:2px}
-.tile .s{font-size:13px;opacity:.92}
-.t-indigo{background:var(--indigo)}.t-teal{background:var(--teal)}.t-violet{background:var(--violet)}.t-amber{background:var(--amber);color:#2a1d00}
-.empty{display:flex;gap:18px;align-items:center;flex-wrap:wrap;border:2px dashed #cdd3ee;background:#fff;border-radius:14px;padding:26px}
-.empty .ico{width:54px;height:54px;border-radius:14px;background:var(--coral);color:#fff;display:grid;place-items:center}
-.empty h3{margin:0 0 4px}.empty p{margin:0;color:var(--mut)}.empty .btn{margin-left:auto}
-.chip{display:inline-block;padding:4px 11px;border-radius:99px;margin:3px 4px 3px 0;font-size:13px;font-weight:600}
-.chip.ok{background:#d9f3ef;color:#08665e}.chip.bad{background:#fde1e3;color:#a31f2b}.chip.nu{background:#eceefa;color:#3b4172}
-.chip.good{background:#dcf5e9;color:#0b6b43}.chip.mid{background:#fdf0d2;color:#7a4b00}.chip.low{background:#fde1e3;color:#a31f2b}
-.pill{display:inline-block;min-width:46px;text-align:center;padding:3px 10px;border-radius:99px;font-weight:800;font-size:13px}
-.pill.good{background:#dcf5e9;color:#0b6b43}.pill.mid{background:#fdf0d2;color:#7a4b00}.pill.low{background:#fde1e3;color:#a31f2b}
-.bar{height:8px;background:#e7eaf7;border-radius:4px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--teal);border-radius:4px;transition:width .5s}
-.tips{margin:0;padding-left:18px;color:var(--mut)}.tips li{margin:5px 0}
-table{width:100%;border-collapse:collapse}th{font-size:13px;color:var(--mut);font-weight:700;text-align:left;padding:8px 10px;border-bottom:2px solid var(--line)}
-td{padding:11px 10px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top}tr:last-child td{border-bottom:0}
-.cwrap{position:relative;height:260px}.cwrap.tall{height:300px}
-.job{margin:14px 0}.job b{font-weight:700}.job .row{display:flex;justify-content:space-between;margin-bottom:6px}
-
-/* ---------- interview ---------- */
-.ibar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-.prog{flex:1;min-width:160px}.prog .bar>i{background:var(--violet)}
-#timer{font-weight:700;font-variant-numeric:tabular-nums}.late{color:var(--low)}#warn{color:var(--mid);font-weight:700;font-size:14px}
-#chat{max-height:430px;overflow:auto;margin:14px 0;padding-right:4px}
-#chat .m{margin:10px 0;padding:12px 15px;border-radius:14px;max-width:88%;line-height:1.55}
-#chat .ai{background:#f1ecff;border:1px solid #e0d6ff;border-bottom-left-radius:4px}
-#chat .me{background:var(--indigo);color:#fff;margin-left:auto;border-bottom-right-radius:4px}
-#chat .coach{background:#fff6e0;border:1px solid #fde4a3;font-size:14px}
-#chat .m .meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-#ans{min-height:100px;margin-top:6px}
-.rep-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:14px}
-.rep-grid>div{border-radius:12px;padding:16px;border:1px solid var(--line)}
-.rep-grid h4{margin:0 0 8px;font-family:var(--disp);font-size:16px}
-.rep-grid ul{margin:0;padding-left:18px}.rep-grid li{margin:5px 0}
-.r-good{background:#effaf5;border-color:#bfe9d5!important}.r-bad{background:#fff1f2;border-color:#f6c6ca!important}.r-next{background:#eef0ff;border-color:#cfd3fb!important}
-.score-big{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.score-big .n{font-family:var(--disp);font-size:56px;font-weight:800;line-height:1}
-.rw{border-left:4px solid var(--coral);background:#fff6f5;border-radius:0 10px 10px 0;padding:10px 14px;margin:12px 0}
-.rw .b{color:var(--mut);text-decoration:line-through;text-decoration-color:#e0a5a1}
-
-/* ---------- toasts ---------- */
-#toasts{position:fixed;right:18px;top:18px;z-index:50;display:grid;gap:10px;max-width:min(380px,calc(100vw - 36px))}
-.toast{padding:13px 16px;border-radius:12px;background:var(--ink);color:#fff;font-weight:600;font-size:14px;box-shadow:0 18px 40px -16px rgba(10,10,50,.6);border-left:5px solid var(--coral);animation:tin .25s ease-out}
-.toast.ok{border-left-color:var(--teal)}
-@keyframes tin{from{opacity:0;transform:translateY(-8px)}}
-
-/* ---------- responsive ---------- */
-@media(max-width:1000px){.g21{grid-template-columns:1fr}}
-@media(max-width:900px){
- #auth{grid-template-columns:1fr}.stage{padding:30px 24px 36px}.stage h1{font-size:32px;margin-top:26px}.stage p{margin-bottom:22px}.scorecard{display:none}
- .s-circle{width:260px;height:260px;right:-90px;top:-110px}.s-quarter{width:180px;height:180px}.s-pill,.s-ring{display:none}
- #app{grid-template-columns:1fr}
- .side{position:static;height:auto;flex-direction:row;align-items:center;gap:6px;overflow-x:auto;padding:10px 12px}
- .side .brand{display:none}.side nav{display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto}.side{overflow:visible}.nav{width:auto;white-space:nowrap;padding:8px 12px}.nav.on::before{display:none}.nav .ico{display:none}
- .nav.on{background:var(--indigo)}.user{margin:0 0 0 auto;padding:6px}.uinfo{display:none}
- .content{padding:20px 14px 60px}.page-h h1{font-size:26px}
-}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px clamp(14px,3vw,28px);backdrop-filter:blur(14px);background:rgba(10,8,32,.55);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:20}
+.brand{font-size:clamp(17px,3vw,22px);font-weight:800;background:var(--g);-webkit-background-clip:text;background-clip:text;color:transparent}
+.uchip{display:flex;align-items:center;gap:10px}.av{width:36px;height:36px;border-radius:50%;background:var(--g);display:grid;place-items:center;font-weight:700}
+#uchip{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+nav{display:flex;gap:8px;padding:14px clamp(14px,3vw,28px);overflow-x:auto;scrollbar-width:none}nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;background:var(--card);color:var(--tx);border:1px solid var(--bd);padding:11px 20px;border-radius:99px;cursor:pointer;font:600 14px inherit;font-family:inherit;transition:.2s;min-height:44px}
+nav button:hover{transform:translateY(-2px);border-color:var(--ac)}nav button.on{background:var(--g);border-color:transparent;box-shadow:0 8px 24px rgba(124,92,255,.4)}
+main{padding:0 clamp(14px,3vw,28px) 48px;max-width:1150px;margin:auto}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:clamp(16px,2.5vw,24px);margin:14px 0;backdrop-filter:blur(16px);box-shadow:0 10px 40px rgba(0,0,0,.25);transition:.25s}
+.card:hover{border-color:rgba(124,92,255,.5)}.card h3{margin-top:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+textarea,input:not([type=checkbox]):not([type=file]),select{width:100%;background:rgba(255,255,255,.07);color:var(--tx);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;font:inherit;outline:none;transition:.2s}
+select{width:auto}select option{background:#1b1740}textarea{min-height:140px;resize:vertical}
+textarea:focus,input:focus,select:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(124,92,255,.3)}
+input[type=file]{color:var(--mut);margin-bottom:8px;max-width:100%}
+button.p{background:var(--g);color:#fff;border:0;padding:0 22px;min-height:46px;border-radius:12px;cursor:pointer;margin:6px 6px 0 0;font:600 15px inherit;font-family:inherit;transition:.2s;box-shadow:0 6px 18px rgba(124,92,255,.35)}
+button.p:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(255,92,168,.4)}button.p:active{transform:scale(.97)}button.p:disabled{opacity:.6;cursor:wait;transform:none}
+button.ghost{background:transparent;border:1px solid var(--bd);box-shadow:none}button.sm{min-height:36px;padding:0 14px;font-size:13px;margin:0}
+.big{font-size:clamp(34px,6vw,50px);font-weight:800;background:linear-gradient(135deg,#a78bfa,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent}
+.chip{display:inline-block;padding:4px 12px;border-radius:99px;margin:3px;font-size:13px}.ok{background:rgba(52,211,153,.15);color:var(--ok)}.bad{background:rgba(251,113,133,.15);color:var(--bad)}
+.bar{height:9px;background:rgba(255,255,255,.1);border-radius:9px;overflow:hidden}.bar>i{display:block;height:100%;background:linear-gradient(90deg,#22d3ee,#7c5cff,#ff5ca8);border-radius:9px}
+.hero{padding:clamp(20px,4vw,34px);border-radius:24px;margin:14px 0;background:linear-gradient(135deg,rgba(124,92,255,.4),rgba(255,92,168,.28),rgba(34,211,238,.2));border:1px solid var(--bd);box-shadow:0 14px 50px rgba(124,92,255,.25)}
+.hello{font-size:clamp(22px,4.5vw,34px);font-weight:800}.hero p{color:#d9d6ff;margin:6px 0 16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}.kpi{background:rgba(10,8,32,.45);border:1px solid var(--bd);border-radius:16px;padding:14px}
+.kpi span{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}.kpi b{display:block;font-size:28px;margin-top:2px}
+.kpi:nth-child(1) b{color:#a78bfa}.kpi:nth-child(2) b{color:#22d3ee}.kpi:nth-child(3) b{color:#f9a8d4}.kpi:nth-child(4) b{color:#fcd34d}
+#chat .m,.bub{margin:10px 0;padding:12px 16px;border-radius:14px;line-height:1.55}.ai{background:rgba(124,92,255,.22)}.me{background:rgba(34,211,238,.18);text-align:right}#chat .co{background:rgba(52,211,153,.16)}
+.bub{white-space:pre-wrap;text-align:left!important}.bub pre{background:#0b0d1c;padding:10px;border-radius:10px;overflow:auto;margin:6px 0}.bub code{background:#0b0d1c;padding:1px 6px;border-radius:5px}
+.vbox{background:rgba(0,0,0,.35);border:1px solid var(--bd);border-radius:16px;overflow:hidden}.lab{padding:9px 14px;font-size:14px}
+@keyframes talk{0%,100%{ry:3}50%{ry:12}}#avatar.talk #mouth{animation:talk .28s infinite}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b1740;border:1px solid var(--ac);padding:12px 20px;border-radius:12px;z-index:99;max-width:90vw}
+/* auth */
+#auth{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;overflow:auto}
+.auth-wrap{display:grid;grid-template-columns:1.05fr 1fr;max-width:940px;width:100%;border-radius:28px;overflow:hidden;border:1px solid var(--bd);background:rgba(18,14,50,.7);backdrop-filter:blur(22px);box-shadow:0 30px 90px rgba(0,0,0,.5)}
+.promo{padding:clamp(28px,4vw,48px);background:linear-gradient(145deg,#7c5cff,#c13fa4 60%,#ff5ca8);display:flex;flex-direction:column;justify-content:center}
+.promo .logo{font-size:44px}.promo h1{margin:8px 0 4px;font-size:34px}.promo p{margin:0 0 20px;opacity:.9}.promo ul{list-style:none;padding:0;margin:0;display:grid;gap:12px}.promo li{background:rgba(255,255,255,.16);padding:11px 14px;border-radius:12px;font-size:14px}
+.formside{padding:clamp(24px,4vw,44px)}.formside h2{margin:0 0 4px;font-size:26px}.formside .sub{color:var(--mut);margin:0 0 18px;font-size:14px}.mbrand{display:none}
+.f{margin-bottom:14px}.f label{display:block;font-size:13px;color:var(--mut);margin-bottom:6px}.err{color:var(--bad);font-size:12.5px;min-height:16px;display:block;margin-top:4px}
+.pw{position:relative}.pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--mut);cursor:pointer;font-size:18px;padding:8px}
+.meter{height:5px;border-radius:5px;background:rgba(255,255,255,.1);margin-top:8px;overflow:hidden}.meter i{display:block;height:100%;width:0;transition:.3s}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:14px;font-size:13.5px;flex-wrap:wrap}
+a.l{color:#a78bfa;cursor:pointer;text-decoration:none;font-weight:600}a.l:hover{text-decoration:underline}
+.formside button.p{width:100%;margin:4px 0 10px}.or{text-align:center;color:var(--mut);font-size:12px;margin:6px 0}.foot{text-align:center;font-size:14px;color:var(--mut);margin-top:10px}
+@media(max-width:760px){.auth-wrap{grid-template-columns:1fr}.promo{display:none}.mbrand{display:block;font-size:24px;font-weight:800;margin-bottom:14px}.uchip #uchip{display:none}}
 </style></head><body>
-<div id="toasts" role="status" aria-live="polite"></div>
-
-<!-- =================== LOGIN / REGISTER =================== -->
-<div id="auth" class="hide">
- <section class="stage">
-  <div class="shape s-circle"></div><div class="shape s-quarter"></div><div class="shape s-pill"></div><div class="shape s-ring"></div>
-  <div class="stage-in">
-   <div class="brand"><span class="logo">AI</span>AI Recruitment Intelligence</div>
-   <h1>Practice the interview before it counts.</h1>
-   <p>Upload your resume, paste the job description, and answer out loud. You get a score and feedback on every answer.</p>
-   <div class="scorecard" aria-hidden="true">
-    <div class="sc-q">Tell me about a project where you had to learn something new fast.</div>
-    <div class="wave" id="wave"></div>
-    <div class="sc-tags"><span class="tag tg1">Communication 8/10</span><span class="tag tg2">Technical 7/10</span><span class="tag tg3">Result is missing</span></div>
-   </div>
-  </div>
- </section>
- <section class="formside">
-  <form class="acard" onsubmit="submitAuth(event)" novalidate>
-   <h2 id="aTitle">Welcome back</h2>
-   <p class="sub" id="aSub">Log in to continue your interview practice.</p>
-   <div class="seg" role="tablist">
-    <button type="button" id="tabLogin" class="on" role="tab" onclick="setMode('login')">Log in</button>
-    <button type="button" id="tabReg" role="tab" onclick="setMode('register')">Create account</button>
-   </div>
-   <div class="field"><label for="aEm">Email</label><input id="aEm" type="email" autocomplete="email" placeholder="you@example.com"></div>
-   <div class="field"><label for="aPw">Password</label>
-    <div class="pw"><input id="aPw" type="password" autocomplete="current-password" placeholder="At least 6 characters"><button type="button" id="pwBtn" onclick="togglePw()">Show</button></div></div>
-   <div class="err" id="aErr" role="alert"></div>
-   <button class="btn" id="aBtn" type="submit">Log in</button>
-   <p class="note">For security, we record your email, login time and IP address.</p>
-  </form>
- </section>
-</div>
-
-<!-- =================== APP =================== -->
-<div id="app" class="hide">
- <aside class="side">
-  <div class="brand"><span class="logo">AI</span><span>Recruitment<br>Intelligence</span></div>
-  <nav aria-label="Main">
-   <button class="nav on" data-t="dash" style="--c:#4f46e5"><span class="ico" data-ic="dash"></span>Dashboard</button>
-   <button class="nav" data-t="inputs" style="--c:#e8453c"><span class="ico" data-ic="file"></span>Resume and job</button>
-   <button class="nav" data-t="intv" style="--c:#7c3aed"><span class="ico" data-ic="mic"></span>AI interview</button>
-   <button class="nav" data-t="bulk" style="--c:#0b8f84"><span class="ico" data-ic="users"></span>Bulk ranking</button>
-   <button class="nav" data-t="hist" style="--c:#e29a00"><span class="ico" data-ic="clock"></span>History</button>
-  </nav>
-  <div class="user"><div class="av" id="uAv">A</div><div class="uinfo"><b>Signed in</b><span id="uEmail"></span></div>
-   <button onclick="logout()" title="Log out" aria-label="Log out" data-ic="out"></button></div>
- </aside>
-
- <div class="content">
-  <!-- Dashboard -->
-  <section id="dash" class="tab">
-   <div class="page-h">
-    <div><h1 id="greet">Welcome</h1><p>Here is where your job search stands today.</p></div>
-    <div class="row-btn"><button class="btn coral" onclick="go('inputs')">Analyze a resume</button><button class="btn violet" onclick="go('intv')">Start a mock interview</button></div>
-   </div>
-   <div class="grid g4">
-    <div class="tile t-indigo"><div class="top"><span class="l">ATS score</span><span class="ic" data-ic="target"></span></div><div class="v" id="kAts">–</div><div class="s" id="kAtsS">Analyze a resume to see this.</div></div>
-    <div class="tile t-teal"><div class="top"><span class="l">Career readiness</span><span class="ic" data-ic="check"></span></div><div class="v" id="kReady">–</div><div class="s" id="kReadyS">Built from ATS, skill match and interview.</div></div>
-    <div class="tile t-violet"><div class="top"><span class="l">Interviews taken</span><span class="ic" data-ic="mic"></span></div><div class="v" id="kCount">0</div><div class="s" id="kCountS">Log in and finish one to start your record.</div></div>
-    <div class="tile t-amber"><div class="top"><span class="l">Average interview score</span><span class="ic" data-ic="chart"></span></div><div class="v" id="kAvg">–</div><div class="s" id="kAvgS">No interviews yet.</div></div>
-   </div>
-
-   <div class="grid g21" style="margin-top:14px">
-    <div class="card"><h3>Interview progress</h3><div class="cwrap"><canvas id="trend"></canvas></div><p class="mut" id="trendMsg" style="margin:8px 0 0"></p></div>
-    <div class="card"><h3>Recent interviews</h3><div id="recent"></div></div>
-   </div>
-
-   <div id="empty" class="empty" style="margin-top:14px">
-    <div class="ico" data-ic="file"></div>
-    <div><h3>Add a resume and a job description</h3><p>Your skill gaps, ATS breakdown and job matches appear here after the first analysis.</p></div>
-    <button class="btn coral" onclick="go('inputs')">Add resume and job</button>
-   </div>
-
-   <div id="insights" class="hide">
-    <div class="grid g2" style="margin-top:14px">
-     <div class="card"><h3>Readiness profile <span class="chip nu" id="level"></span></h3><div class="cwrap tall"><canvas id="radar"></canvas></div></div>
-     <div class="card"><h3>ATS breakdown</h3><div class="cwrap tall"><canvas id="brk"></canvas></div></div>
-    </div>
-    <div class="grid g2" style="margin-top:14px">
-     <div class="card"><h3>Skill gap</h3>
-      <div class="mut" style="font-weight:700;font-size:13px">You have</div><div id="matched"></div>
-      <div class="mut" style="font-weight:700;font-size:13px;margin-top:8px">You need</div><div id="missing"></div>
-      <button class="btn teal sm" style="margin-top:14px" onclick="plan()">Create a learning plan</button><div id="plan" style="margin-top:12px"></div></div>
-     <div class="card"><h3>How to raise your ATS score</h3><ul class="tips" id="tips"></ul></div>
-    </div>
-    <div class="card" style="margin-top:14px"><h3>Best job matches</h3><div id="jobs"></div></div>
-   </div>
-  </section>
-
-  <!-- Resume and job -->
-  <section id="inputs" class="tab hide">
-   <div class="page-h"><div><h1>Resume and job</h1><p>Everything else in the app starts from these two boxes.</p></div></div>
-   <div class="grid g2">
-    <div class="card"><h3>Your resume</h3><input type="file" id="file" accept=".pdf,.docx,.txt" aria-label="Upload resume"><textarea id="resume" placeholder="Or paste your resume text here" style="margin-top:10px"></textarea></div>
-    <div class="card"><h3>The job</h3><input id="role" placeholder="Role title, for example Data Analyst" style="margin-bottom:10px"><textarea id="jd" placeholder="Paste the job description here"></textarea></div>
-   </div>
-   <div class="row-btn" style="margin-top:14px;align-items:center"><button class="btn coral" id="anBtn" onclick="analyze()">Analyze</button><button class="btn line" onclick="rewrite()">Rewrite my resume for this job</button><span id="st" class="mut"></span></div>
-   <div id="rw" class="card hide"></div>
-  </section>
-
-  <!-- Interview -->
-  <section id="intv" class="tab hide">
-   <div class="page-h"><div><h1>AI interview</h1><p>Questions come from your resume and the job description.</p></div></div>
-   <div class="card">
-    <div class="ibar">
-     <select id="diff" aria-label="Difficulty"><option>easy</option><option selected>medium</option><option>hard</option></select>
-     <button class="btn violet" id="startBtn" onclick="startI()">Start interview</button>
-     <label class="chk"><input type="checkbox" id="voice" checked> Voice mode</label>
-     <label class="chk"><input type="checkbox" id="star" checked> STAR coach</label>
-     <span id="timer"></span><span id="warn"></span>
-    </div>
-    <div class="ibar" style="margin-top:12px"><span class="mut" id="prog" style="min-width:110px"></span><div class="prog"><div class="bar"><i id="pbar" style="width:0"></i></div></div></div>
-    <div id="chat" aria-live="polite"></div>
-    <textarea id="ans" class="hide" placeholder="Type your answer, or press Record"></textarea>
-    <div class="row-btn" style="margin-top:10px"><button class="btn line hide" id="mic" onclick="toggleRec()">Record answer</button><button class="btn hide" id="send" onclick="sendA()">Submit answer</button></div>
-   </div>
-   <div class="card hide" id="rep"></div>
-  </section>
-
-  <!-- Bulk ranking -->
-  <section id="bulk" class="tab hide">
-   <div class="page-h"><div><h1>Bulk ranking</h1><p>Rank many resumes against the job description from the Resume and job page.</p></div></div>
-   <div class="card"><input type="file" id="bfiles" multiple accept=".pdf,.docx,.txt" aria-label="Upload resumes"><p class="hint" style="margin:8px 0 0">Up to 20 files. PDF, DOCX or TXT.</p>
-    <button class="btn teal" style="margin-top:12px" onclick="rankAll()">Rank resumes</button><div id="bres" style="margin-top:14px"></div></div>
-  </section>
-
-  <!-- History -->
-  <section id="hist" class="tab hide">
-   <div class="page-h"><div><h1>History</h1><p>Every interview you finish while logged in.</p></div></div>
-   <div class="card"><div class="cwrap"><canvas id="histc"></canvas></div><div id="hmsg" class="mut"></div></div>
-   <div class="card"><div id="htab"></div></div>
-  </section>
+<div id="auth"><div class="auth-wrap">
+ <div class="promo"><div class="logo">🧠</div><h1>RecruitAI</h1><p>Your AI-powered career copilot</p>
+  <ul><li>📄 Real ATS score &amp; resume tips</li><li>🎯 Skill-gap analysis &amp; job matching</li><li>🎥 AI video interviews with live feedback</li><li>💬 Ask-anything AI coach</li></ul></div>
+ <div class="formside"><div class="mbrand brand">🧠 RecruitAI</div>
+  <div id="v-login" class="view"><h2>Welcome back 👋</h2><p class="sub">Log in to continue your journey</p>
+   <div class="f"><label>Email</label><input id="l-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
+   <div class="f"><label>Password</label><div class="pw"><input id="l-pass" type="password" autocomplete="current-password" placeholder="Your password"><button type="button" onclick="eye('l-pass',this)">👁</button></div></div>
+   <div class="row"><span></span><a class="l" onclick="view('forgot')">Forgot password?</a></div><span class="err" id="e-login"></span>
+   <button class="p" id="b-login" onclick="doLogin()">Log in</button><div class="or">— or —</div>
+   <button class="p ghost" onclick="enterApp({name:'Guest'})">Continue as guest</button>
+   <div class="foot">New here? <a class="l" onclick="view('signup')">Create account</a></div></div>
+  <div id="v-signup" class="view hide"><h2>Create your account ✨</h2><p class="sub">Free to start — takes 30 seconds</p>
+   <div class="f"><label>Full name</label><input id="s-name" autocomplete="name" placeholder="Your name"></div>
+   <div class="f"><label>Email</label><input id="s-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
+   <div class="f"><label>Password (min 8 characters)</label><div class="pw"><input id="s-pass" type="password" autocomplete="new-password" oninput="meter(this.value)" placeholder="Create a password"><button type="button" onclick="eye('s-pass',this)">👁</button></div><div class="meter"><i id="meter"></i></div></div>
+   <div class="f"><label>Confirm password</label><input id="s-pass2" type="password" autocomplete="new-password" placeholder="Repeat password"></div><span class="err" id="e-signup"></span>
+   <button class="p" id="b-signup" onclick="doSignup()">Create account</button>
+   <div class="foot">Already have an account? <a class="l" onclick="view('login')">Log in</a></div></div>
+  <div id="v-forgot" class="view hide"><h2>Forgot password? 🔑</h2><p class="sub">Enter your email and we'll send a 6-digit code</p>
+   <div class="f"><label>Email</label><input id="f-email" type="email" placeholder="you@example.com"></div><span class="err" id="e-forgot"></span>
+   <button class="p" id="b-forgot" onclick="doForgot()">Send reset code</button><div class="foot"><a class="l" onclick="view('login')">← Back to log in</a></div></div>
+  <div id="v-reset" class="view hide"><h2>Reset password 🔒</h2><p class="sub">Enter the code from your email and a new password</p>
+   <div class="f"><label>6-digit code</label><input id="r-code" inputmode="numeric" maxlength="6" placeholder="123456"></div>
+   <div class="f"><label>New password</label><div class="pw"><input id="r-pass" type="password" autocomplete="new-password" placeholder="At least 8 characters"><button type="button" onclick="eye('r-pass',this)">👁</button></div></div><span class="err" id="e-reset"></span>
+   <button class="p" id="b-reset" onclick="doReset()">Update password</button><div class="foot"><a class="l" onclick="view('login')">← Back to log in</a></div></div>
+ </div></div></div>
+<div id="app" class="hide"><header><div class="brand">🧠 RecruitAI</div><div class="uchip"><span class="av" id="av">A</span><span id="uchip"></span><button class="p sm ghost" onclick="logout()">Logout</button></div></header>
+<nav><button class="on" data-t="inputs">1. Resume &amp; Job</button><button data-t="dash">2. Dashboard</button><button data-t="intv">3. AI Interview</button><button data-t="ask">4. Ask AI</button></nav>
+<main>
+<section id="inputs" class="tab">
+ <div class="grid">
+  <div class="card"><h3>Resume</h3><input type="file" id="file" accept=".pdf,.docx,.txt"><textarea id="resume" placeholder="…or paste resume text"></textarea></div>
+  <div class="card"><h3>Job Description</h3><input id="role" placeholder="Role title" style="width:100%;margin-bottom:8px;padding:8px"><textarea id="jd" placeholder="Paste job description"></textarea></div>
  </div>
-</div>
+ <button class="p" onclick="analyze()">Analyze</button><span id="st" class="mut"></span>
+</section>
 
+<section id="dash" class="tab hide">
+ <div class="hero"><div class="hello"><span id="greet">Welcome</span>, <span id="uname">there</span> 👋</div><p>Your career intelligence at a glance. Analyze a resume to light up this dashboard.</p>
+ <div class="kpis"><div class="kpi"><span>ATS score</span><b id="k1">–</b></div><div class="kpi"><span>Best job match</span><b id="k2">–</b></div><div class="kpi"><span>Readiness</span><b id="k3">–</b></div><div class="kpi"><span>Interview</span><b id="k4">–</b></div></div></div>
+ 
+ <div class="grid">
+  <div class="card"><div class="mut">ATS Score</div><div class="big" id="ats">–</div><div id="tips" class="mut"></div></div>
+  <div class="card"><div class="mut">Career Readiness</div><div class="big" id="ready">–</div><div id="level"></div><canvas id="radar" height="200"></canvas></div>
+ </div>
+ <div class="grid">
+  <div class="card"><h3>Skill Gap</h3><div class="mut">Matched</div><div id="matched"></div><div class="mut">Missing</div><div id="missing"></div>
+   <button class="p" onclick="plan()">Generate learning plan</button><div id="plan"></div></div>
+  <div class="card"><h3>ATS Breakdown</h3><canvas id="brk" height="200"></canvas></div>
+ </div>
+ <div class="card"><h3>Job Matches</h3><div id="jobs"></div></div>
+</section>
+
+<section id="intv" class="tab hide">
+ <div class="card">
+  <select id="mode"><option value="practice">Practice (AI coach on)</option><option value="real">Real mock (no help)</option></select>
+  <select id="diff"><option>easy</option><option selected>medium</option><option>hard</option></select>
+  <label class="mut"><input type="checkbox" id="voice" checked> AI voice</label>
+  <label class="mut"><input type="checkbox" id="rec"> Record session</label>
+  <button class="p" onclick="startI()">Start video interview</button>
+  <div class="grid" style="margin-top:12px">
+   <div class="vbox"><svg id="avatar" viewBox="0 0 200 200" width="100%" height="260"><rect width="200" height="200" fill="#232850"/>
+     <circle cx="100" cy="95" r="52" fill="#f1c9a5"/><path d="M48 90 Q100 20 152 90 Q140 55 100 52 Q60 55 48 90Z" fill="#3a2a22"/>
+     <circle cx="80" cy="92" r="5" fill="#222"/><circle cx="120" cy="92" r="5" fill="#222"/>
+     <ellipse id="mouth" cx="100" cy="122" rx="14" ry="3" fill="#8a2e2e"/><path d="M45 200 Q100 140 155 200Z" fill="#6c7bff"/></svg>
+     <div class="lab">AI Interviewer <span id="speakst" class="mut"></span></div></div>
+   <div class="vbox"><video id="cam" autoplay muted playsinline style="width:100%;height:260px;object-fit:cover;background:#000;transform:scaleX(-1)"></video>
+     <div class="lab">You <span id="camst" class="mut"></span></div></div>
+  </div>
+  <div id="chat"></div>
+  <textarea id="ans" class="hide" placeholder="Type or speak your answer…"></textarea>
+  <button class="p hide" id="mic" onclick="listen()">🎤 Speak</button>
+  <button class="p hide" id="send" onclick="sendA()">Submit answer</button>
+  <button class="p hide" id="skip" onclick="skipQ()" style="background:#555">Skip</button>
+  <div id="coachbox" class="hide" style="margin-top:10px;border-top:1px solid #2a2f4d;padding-top:10px">
+   <b>🤖 AI Coach</b> <span class="mut">(Practice mode only)</span><br>
+   <button class="p" onclick="coach('')">I don't know — show model answer</button>
+   <input id="cq" placeholder="Ask the coach anything about this question…" style="width:55%;padding:9px">
+   <button class="p" onclick="coach($('cq').value)">Ask</button>
+  </div>
+ </div>
+ <div class="card hide" id="rep"></div>
+</section>
+<section id="ask" class="tab hide">
+ <div class="card">
+  <b>💬 Ask AI anything</b> <span class="mut">— career, coding, interview prep, concepts…</span><br>
+  <label class="mut"><input type="checkbox" id="usectx"> Use my resume &amp; job description as context</label>
+  <label class="mut"><input type="checkbox" id="askvoice"> Read answers aloud</label>
+  <button class="p" onclick="CH=[];$('achat').innerHTML=''" style="background:#555">Clear chat</button>
+  <div style="margin:8px 0">
+   <button class="p" onclick="askSend('How can I improve my ATS score?')" style="background:#2a2f4d">Improve my ATS score</button>
+   <button class="p" onclick="askSend('Explain the STAR method with an example')" style="background:#2a2f4d">STAR method</button>
+   <button class="p" onclick="askSend('What are the most common HR interview questions and how should I answer them?')" style="background:#2a2f4d">Common HR questions</button>
+  </div>
+  <div id="achat" style="max-height:480px;overflow:auto"></div>
+  <textarea id="aq" style="min-height:70px" placeholder="Type your question… (Enter = send, Shift+Enter = new line)"></textarea>
+  <button class="p" onclick="askSend()">Send</button><button class="p" id="amic" onclick="askListen()">🎤 Speak</button>
+  <div class="mut" style="font-size:12px;margin-top:6px">AI can make mistakes. Double-check important facts, especially medical, legal, financial or technical details.</div>
+ </div>
+</section>
+</main></div>
 <script>
-const $=id=>document.getElementById(id),API="";
-let D=null,SID=null,charts={},ivScore=null,busy=false,active=false,curQ="",qStart=0,tabSwitches=0,log=[],stats={wpm:[],fillers:0},lastReport=null,lastSecs=null,hist=[];
-let mr=null,chunks=[],recording=false,recT0=0,mode="login";
-const LIMIT=120,PAL=["#4338ca","#7c3aed","#0b8f84","#e8453c","#ffb020","#2563eb","#db2777"];
-if(window.Chart){Chart.defaults.color="#5d6486";Chart.defaults.borderColor="#e3e7f3";Chart.defaults.font.family='"DM Sans",system-ui,sans-serif'}
+const $=id=>document.getElementById(id),API="";let D=null,SID=null,charts={},ivScore=null;
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("on"));b.classList.add("on");
+ document.querySelectorAll(".tab").forEach(t=>t.classList.add("hide"));$(b.dataset.t).classList.remove("hide")});
+const post=async(u,b)=>{const h={"Content-Type":"application/json"},t=getTok();if(t)h.Authorization="Bearer "+t;const r=await fetch(API+u,{method:"POST",headers:h,body:JSON.stringify(b)});const x=await r.text();let j;try{j=JSON.parse(x)}catch{throw x}if(!r.ok){const d=j.detail;throw Array.isArray(d)?d.map(e=>e.msg).join(", "):(d||x)}return j};
+$("file").onchange=async e=>{const f=new FormData();f.append("file",e.target.files[0]);$("st").textContent="Reading file…";
+ try{const r=await fetch("/api/parse-resume",{method:"POST",body:f});const j=await r.json();if(!r.ok)throw j.detail;$("resume").value=j.text;$("st").textContent="Resume loaded ✔"}catch(x){$("st").textContent=x}};
+const chips=(a,c)=>a.map(s=>`<span class="chip ${c}">${s}</span>`).join("")||"<span class=mut>none</span>";
+function draw(id,cfg){if(charts[id])charts[id].destroy();charts[id]=new Chart($(id),cfg)}
+function render(){const a=D.ats,r=D.readiness;$("ats").textContent=a.score+"/100";$("ready").textContent=r.overall+"%";$("level").textContent=r.level;
+ $("tips").innerHTML=a.tips.map(t=>"• "+t).join("<br>");$("matched").innerHTML=chips(a.skill_gap.matched,"ok");$("missing").innerHTML=chips(a.skill_gap.missing,"bad");
+ draw("radar",{type:"radar",data:{labels:Object.keys(r.dimensions),datasets:[{data:Object.values(r.dimensions),backgroundColor:"rgba(108,123,255,.3)",borderColor:"#6c7bff"}]},options:{scales:{r:{min:0,max:100}},plugins:{legend:{display:false}}}});
+ draw("brk",{type:"bar",data:{labels:Object.keys(a.breakdown),datasets:[{data:Object.values(a.breakdown),backgroundColor:"#6c7bff"}]},options:{plugins:{legend:{display:false}}}});
+ $("jobs").innerHTML=D.job_matches.map(j=>`<div style="margin:10px 0"><b>${j.title}</b> <span class=mut>${j.match}%</span><div class=bar><i style="width:${j.match}%"></i></div><small class=mut>Missing: ${j.missing.join(", ")||"—"}</small></div>`).join("")}
+async function analyze(){const resume=$("resume").value,job_description=$("jd").value;if(!resume||!job_description)return $("st").textContent="Add both resume and job description";
+ $("st").textContent="Analyzing…";try{D=await post("/api/analyze",{resume,job_description});render();$("st").textContent="Done";document.querySelector('[data-t=dash]').click()}catch(e){$("st").textContent=e}}
+async function plan(){$("plan").textContent="Generating…";try{const p=await post("/api/learning-plan",{resume:$("resume").value,job_description:$("jd").value});
+ $("plan").innerHTML=p.weeks.map(w=>`<p><b>Week ${w.week}: ${w.focus}</b><br>${w.tasks.join("<br>")}</p>`).join("")}catch(e){$("plan").textContent=e}}
+const add=(c,t)=>{$("chat").insertAdjacentHTML("beforeend",`<div class="m ${c}">${t}</div>`);$("chat").lastChild.scrollIntoView()};
+let stream=null,recorder=null,chunks=[],busy=false;
+function speak(t){return new Promise(res=>{if(!$("voice").checked||!window.speechSynthesis)return res();speechSynthesis.cancel();if(typeof listening!=="undefined"&&listening&&rec)rec.stop();
+ const u=new SpeechSynthesisUtterance(t.replace(/<[^>]+>/g,""));const v=speechSynthesis.getVoices().find(x=>/en/i.test(x.lang));if(v)u.voice=v;
+ u.onstart=()=>{$("avatar").classList.add("talk");$("speakst").textContent="speaking…"};u.onend=u.onerror=()=>{$("avatar").classList.remove("talk");$("speakst").textContent="";res()};speechSynthesis.speak(u)})}
+async function startCam(){try{stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});$("cam").srcObject=stream;$("camst").textContent="camera on"}
+ catch(e){$("camst").textContent="camera blocked — allow it in the browser address bar"}}
+function startRec(){if(!stream||!$("rec").checked)return;chunks=[];recorder=new MediaRecorder(stream);recorder.ondataavailable=e=>chunks.push(e.data);recorder.start()}
+function stopRec(){return new Promise(res=>{if(!recorder||recorder.state==="inactive")return res(null);recorder.onstop=()=>res(URL.createObjectURL(new Blob(chunks,{type:"video/webm"})));recorder.stop()})}
+const ui=on=>["ans","send","mic","skip"].forEach(i=>$(i).classList.toggle("hide",!on));
+async function startI(){$("chat").innerHTML="";$("rep").classList.add("hide");if(!$("resume").value||!$("jd").value)return alert("Add resume and job description first (tab 1).");
+ await startCam();const practice=$("mode").value==="practice";
+ try{const r=await post("/api/interview/start",{resume:$("resume").value,job_description:$("jd").value,role:$("role").value||"the role",difficulty:$("diff").value,mode:$("mode").value});
+  SID=r.session_id;$("coachbox").classList.toggle("hide",!practice);startRec();add("ai",`Q${r.number}/${r.total}: ${r.question}`);ui(true);await speak(r.question)}catch(e){alert(e)}}
+async function sendA(txt){const a=(txt||$("ans").value).trim();if(!a||busy)return;busy=true;$("ans").value="";add("me",a);
+ try{const r=await post("/api/interview/answer",{session_id:SID,answer:a});const s=Object.entries(r.scores).map(([k,v])=>`${k}: ${v}/10`).join(" · ");
+  add("ai",`<small class=mut>${s}</small><br>${r.feedback}`);await speak(r.feedback);
+  if(r.finished){ui(false);$("coachbox").classList.add("hide");await final()}else{add("ai",`Q${r.number}/${r.total}: ${r.next_question}`);await speak(r.next_question)}}catch(e){alert(e)}busy=false}
+const skipQ=()=>sendA("I don't know the answer to this question.");
+async function coach(m){try{add("co",m?`🙋 ${m}`:"🙋 I don't know this one — help!");$("cq").value="";const r=await post("/api/interview/coach",{session_id:SID,message:m});add("co","🤖 Coach: "+r.reply);await speak(r.reply)}catch(e){alert(e)}}
+async function final(){const url=await stopRec();if(stream)stream.getTracks().forEach(t=>t.stop());$("camst").textContent="";
+ const r=await fetch("/api/interview/report/"+SID).then(x=>x.json());ivScore=r.overall;$("rep").classList.remove("hide");
+ $("rep").innerHTML=`<h3>Interview Report: ${r.overall}/100 — ${r.recommendation}</h3><b>Strengths</b><br>${r.strengths.join("<br>")}<br><b>Weaknesses</b><br>${r.weaknesses.join("<br>")}<br><b>Next steps</b><br>${r.next_steps.join("<br>")}`+(url?`<br><br><a style="color:#6c7bff" href="${url}" download="interview.webm">⬇ Download recording</a>`:"");
+ if(D){D.readiness=await post("/api/readiness",{ats:D.ats.score,match:D.ats.skill_gap.coverage,interview:ivScore,resume:$("resume").value});render()}}
+let rec=null,listening=false;
+function listen(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return alert("Speech input needs Chrome or Edge");
+ const b=$("mic");if(listening){rec.stop();return}
+ if(window.speechSynthesis)speechSynthesis.cancel();$("avatar").classList.remove("talk");
+ rec=new SR();rec.lang="en-IN";rec.continuous=true;rec.interimResults=true;const base=$("ans").value.trim();let fin="";
+ rec.onstart=()=>{listening=true;b.textContent="⏹ Stop (listening…)";b.style.background="#c0392b"};
+ rec.onresult=e=>{let interim="";for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)fin+=t+" ";else interim+=t}
+  $("ans").value=(base?base+" ":"")+fin+interim};
+ rec.onerror=e=>{const m={"not-allowed":"Microphone blocked. Click the lock icon in the address bar and allow Microphone.","no-speech":"Didn't hear anything. Check your mic, then click Speak and talk.","audio-capture":"No microphone found.","network":"Speech recognition needs an internet connection."};alert(m[e.error]||"Speech error: "+e.error)};
+ rec.onend=()=>{listening=false;b.textContent="🎤 Speak";b.style.background=""};
+ try{rec.start()}catch(e){alert(e)}}
 
-/* ---------- icons ---------- */
-const IC={
- dash:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
- file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/>',
- mic:'<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/>',
- users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
- clock:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
- out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
- target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
- chart:'<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
- check:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/>'};
-const svg=(n,s=20)=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
-document.querySelectorAll("[data-ic]").forEach(e=>e.innerHTML=svg(e.dataset.ic,e.classList.contains("ico")||e.tagName==="BUTTON"?18:26));
-
-/* ---------- helpers ---------- */
-const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-function toast(m,type){const t=document.createElement("div");t.className="toast "+(type||"err");t.textContent=String(m);$("toasts").appendChild(t);setTimeout(()=>t.remove(),6500)}
-const authH=()=>{const t=localStorage.getItem("tok");return t?{Authorization:"Bearer "+t}:{}};
-async function parse(r){
- const t=await r.text();let j;
- if(r.status===401&&localStorage.getItem("tok")&&!r.url.includes("/api/auth/")){forceLogout();throw "Your session expired. Log in again."}
- try{j=JSON.parse(t)}catch{throw "Server error "+r.status+": "+t.slice(0,160)+" (see the uvicorn terminal)"}
- if(!r.ok)throw (typeof j.detail==="string"?j.detail:JSON.stringify(j.detail))||"Something went wrong";
- return j}
-const post=(u,b)=>fetch(API+u,{method:"POST",headers:{"Content-Type":"application/json",...authH()},body:JSON.stringify(b)}).then(parse);
-const get=u=>fetch(API+u,{headers:authH()}).then(parse);
-function draw(id,cfg){if(!window.Chart)return;if(charts[id])charts[id].destroy();charts[id]=new Chart($(id),cfg)}
-const cls=s=>s>=75?"good":s>=50?"mid":"low";
-const nameOf=em=>{const n=(em||"").split("@")[0].replace(/[._\-\d]+/g," ").trim();return n?n.replace(/\b\w/g,c=>c.toUpperCase()):"there"};
-
-/* ---------- login page ---------- */
-(function(){const w=$("wave");for(let i=0;i<30;i++){const b=document.createElement("i");b.style.setProperty("--h",(28+Math.abs(Math.sin(i*1.7))*72)+"%");b.style.setProperty("--d",(i*60)+"ms");w.appendChild(b)}})();
-function setMode(m){mode=m;$("tabLogin").classList.toggle("on",m==="login");$("tabReg").classList.toggle("on",m==="register");
- $("aTitle").textContent=m==="login"?"Welcome back":"Create your account";
- $("aSub").textContent=m==="login"?"Log in to continue your interview practice.":"It is free and takes under a minute.";
- $("aBtn").textContent=m==="login"?"Log in":"Create account";
- $("aPw").autocomplete=m==="login"?"current-password":"new-password";$("aErr").textContent=""}
-function togglePw(){const p=$("aPw"),show=p.type==="password";p.type=show?"text":"password";$("pwBtn").textContent=show?"Hide":"Show"}
-async function submitAuth(ev){
- ev.preventDefault();const email=$("aEm").value.trim(),password=$("aPw").value,b=$("aBtn");
- if(!email||!password){$("aErr").textContent="Enter your email and password.";return}
- b.disabled=true;b.classList.add("busy");$("aErr").textContent="";
- try{const j=await post("/api/auth/"+(mode==="login"?"login":"register"),{email,password});
-  localStorage.setItem("tok",j.token);localStorage.setItem("em",j.email);$("aPw").value="";enterApp()}
- catch(e){$("aErr").textContent=String(e)}
- b.disabled=false;b.classList.remove("busy")}
-function showAuth(){$("app").classList.add("hide");$("auth").classList.remove("hide");document.title="Log in | AI Recruitment Intelligence"}
-function clearSession(){
- localStorage.removeItem("tok");localStorage.removeItem("em");
- D=null;SID=null;hist=[];active=false;busy=false;lastReport=null;log=[];
- try{if(recording&&mr)mr.stop();speechSynthesis.cancel()}catch(e){}
- Object.values(charts).forEach(c=>c.destroy());charts={};
- ["resume","jd","role","ans"].forEach(i=>$(i).value="");
- $("chat").innerHTML="";$("rep").classList.add("hide");showInput(false);$("prog").textContent="";$("timer").textContent="";$("warn").textContent="";$("pbar").style.width="0";
- $("rw").classList.add("hide");$("bres").innerHTML="";$("plan").innerHTML="";renderInsights()}
-function forceLogout(){clearSession();showAuth()}
-function logout(){clearSession();showAuth();toast("You are logged out.","ok")}
-function enterApp(){
- const em=localStorage.getItem("em")||"";
- $("auth").classList.add("hide");$("app").classList.remove("hide");
- $("uEmail").textContent=em;$("uAv").textContent=(em[0]||"A").toUpperCase();
- const h=new Date().getHours();$("greet").textContent=(h<12?"Good morning, ":h<17?"Good afternoon, ":"Good evening, ")+nameOf(em);
- renderInsights();go("dash")}
-
-/* ---------- navigation ---------- */
-const TITLES={dash:"Dashboard",inputs:"Resume and job",intv:"AI interview",bulk:"Bulk ranking",hist:"History"};
-function go(t){
- document.querySelectorAll(".tab").forEach(s=>s.classList.toggle("hide",s.id!==t));
- document.querySelectorAll(".nav").forEach(b=>{const on=b.dataset.t===t;b.classList.toggle("on",on);on?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current")});
- document.title=TITLES[t]+" | AI Recruitment Intelligence";
- if(t==="dash"||t==="hist")refreshStats();window.scrollTo(0,0)}
-document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>go(b.dataset.t));
-
-/* ---------- resume upload ---------- */
-$("file").onchange=async e=>{
- const file=e.target.files[0];if(!file)return;
- const f=new FormData();f.append("file",file);$("st").textContent="Reading resume…";
- try{const j=await fetch("/api/parse-resume",{method:"POST",body:f}).then(parse);
-  $("resume").value=j.text;$("st").textContent="Resume loaded."}
- catch(x){$("st").textContent=x}};
-
-/* ---------- dashboard ---------- */
-async function refreshStats(){
- try{hist=(await get("/api/history")).items||[]}catch(e){hist=[]}
- paintKpis();paintTrend();paintRecent();paintHist()}
-function paintKpis(){
- $("kAts").innerHTML=D?`${D.ats.score}<small>/100</small>`:"–";
- $("kAtsS").textContent=D?"How well your resume matches the job.":"Analyze a resume to see this.";
- $("kReady").innerHTML=D?`${D.readiness.overall}<small>%</small>`:"–";
- $("kReadyS").textContent=D?D.readiness.level:"Built from ATS, skill match and interview.";
- $("kCount").textContent=hist.length;
- $("kCountS").textContent=hist.length?"Saved to your history.":"Log in and finish one to start your record.";
- if(hist.length){const avg=Math.round(hist.reduce((a,x)=>a+x.score,0)/hist.length),best=Math.max(...hist.map(x=>x.score));
-  $("kAvg").innerHTML=`${avg}<small>/100</small>`;$("kAvgS").textContent="Best so far: "+Math.round(best)}
- else{$("kAvg").textContent="–";$("kAvgS").textContent="No interviews yet."}}
-const lineCfg=items=>({type:"line",data:{labels:items.map((_,i)=>"Interview "+(i+1)),datasets:[{label:"Score",data:items.map(x=>x.score),borderColor:"#4338ca",backgroundColor:"rgba(67,56,202,.12)",fill:true,tension:.35,pointRadius:5,pointBackgroundColor:"#4338ca"}]},
- options:{maintainAspectRatio:false,scales:{y:{min:0,max:100}},plugins:{legend:{display:false}}}});
-function paintTrend(){
- const has=hist.length>0;$("trend").parentElement.classList.toggle("hide",!has);
- $("trendMsg").textContent=has?"":"Finish an interview while logged in and your scores appear here.";
- if(has)draw("trend",lineCfg(hist))}
-function paintRecent(){
- const r=hist.slice(-5).reverse();
- $("recent").innerHTML=r.length?r.map(x=>`<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)"><div><b>${esc(x.role||"Interview")}</b><div class="mut" style="font-size:13px">${esc((x.created||"").slice(0,10))}</div></div><span class="pill ${cls(x.score)}">${Math.round(x.score)}</span></div>`).join(""):`<p class="mut" style="margin:0">Nothing here yet. Your finished interviews will be listed.</p>`}
-function paintHist(){
- const it=hist;$("hmsg").textContent=it.length?"":"No saved interviews yet. Finish one while logged in.";
- $("histc").parentElement.classList.toggle("hide",!it.length);
- if(it.length)draw("histc",lineCfg(it));
- $("htab").innerHTML=it.length?`<table><tr><th>Date</th><th>Role</th><th>Score</th><th>Result</th><th>Words per minute</th><th>Filler words</th><th>Tab switches</th></tr>`+
-  it.slice().reverse().map(x=>`<tr><td>${esc((x.created||"").slice(0,10))}</td><td>${esc(x.role)}</td><td><span class="pill ${cls(x.score)}">${Math.round(x.score)}</span></td><td>${esc(x.recommendation)}</td><td>${x.wpm??"–"}</td><td>${x.fillers}</td><td>${x.tab_switches}</td></tr>`).join("")+`</table>`:""}
-const chips=(a,c)=>(a||[]).map(s=>`<span class="chip ${c}">${esc(s)}</span>`).join("")||"<span class=mut>None</span>";
-function renderInsights(){
- $("insights").classList.toggle("hide",!D);$("empty").classList.toggle("hide",!!D);paintKpis();
- if(!D)return;
- const a=D.ats,r=D.readiness;
- $("level").textContent=r.level;
- $("tips").innerHTML=(a.tips||[]).map(t=>"<li>"+esc(t)+"</li>").join("")||"<li>Your resume already covers the job well.</li>";
- $("matched").innerHTML=chips(a.skill_gap.matched,"ok");$("missing").innerHTML=chips(a.skill_gap.missing,"bad");
- draw("radar",{type:"radar",data:{labels:Object.keys(r.dimensions),datasets:[{data:Object.values(r.dimensions),backgroundColor:"rgba(124,58,237,.2)",borderColor:"#7c3aed",pointBackgroundColor:"#7c3aed"}]},options:{maintainAspectRatio:false,scales:{r:{min:0,max:100,ticks:{display:false}}},plugins:{legend:{display:false}}}});
- draw("brk",{type:"bar",data:{labels:Object.keys(a.breakdown),datasets:[{data:Object.values(a.breakdown),backgroundColor:Object.keys(a.breakdown).map((_,i)=>PAL[i%PAL.length]),borderRadius:6}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}});
- $("jobs").innerHTML=(D.job_matches||[]).map(j=>`<div class="job"><div class="row"><b>${esc(j.title)}</b><span class="pill ${cls(j.match)}">${j.match}%</span></div><div class="bar"><i style="width:${j.match}%"></i></div><small class="mut">Missing: ${esc((j.missing||[]).join(", "))||"nothing"}</small></div>`).join("")}
-async function analyze(){
- const resume=$("resume").value,job_description=$("jd").value;
- if(!resume||!job_description)return $("st").textContent="Add both a resume and a job description.";
- const b=$("anBtn");b.disabled=true;b.classList.add("busy");$("st").textContent="Analyzing…";
- try{D=await post("/api/analyze",{resume,job_description});$("st").textContent="";renderInsights();go("dash")}
- catch(e){$("st").textContent="";toast(e)}
- b.disabled=false;b.classList.remove("busy")}
-async function plan(){
- $("plan").textContent="Creating your plan…";
- try{const p=await post("/api/learning-plan",{resume:$("resume").value,job_description:$("jd").value});
-  $("plan").innerHTML=p.weeks.map(w=>`<div class="rw" style="border-left-color:var(--teal);background:#f0faf9"><b>Week ${w.week}: ${esc(w.focus)}</b><br>${(w.tasks||[]).map(esc).join("<br>")}</div>`).join("")}
- catch(e){$("plan").textContent="";toast(e)}}
-async function rewrite(){
- $("st").textContent="Rewriting…";
- try{const r=await post("/api/rewrite-resume",{resume:$("resume").value,job_description:$("jd").value});
-  $("rw").classList.remove("hide");
-  $("rw").innerHTML=`<h3>Suggested summary</h3><p style="margin-top:0">${esc(r.summary)}</p><h3>Improved bullets</h3>`+
-   (r.improvements||[]).map(i=>`<div class="rw"><div class="b">${esc(i.original)}</div><div><b>${esc(i.improved)}</b></div><small class="mut">${esc(i.why)}</small></div>`).join("")+
-   `<h3>Keywords to add, only where they are true for you</h3>${chips(r.keywords_to_add,"ok")}`;
-  $("st").textContent=""}
- catch(e){$("st").textContent="";toast(e)}}
-
-/* ---------- interview ---------- */
-const add=(c,t)=>{$("chat").insertAdjacentHTML("beforeend",`<div class="m ${c}">${t}</div>`);$("chat").lastChild.scrollIntoView({block:"nearest"})};
-const showInput=on=>["ans","send","mic"].forEach(i=>$(i).classList.toggle("hide",!on));
-const mmss=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
-setInterval(()=>{
- if(!active||!qStart){$("timer").textContent="";return}
- const s=Math.floor((Date.now()-qStart)/1000);
- $("timer").textContent="Time "+mmss(s)+" of "+mmss(LIMIT);$("timer").classList.toggle("late",s>LIMIT)},1000);
-document.addEventListener("visibilitychange",()=>{
- if(document.hidden&&active){tabSwitches++;$("warn").textContent="Tab switches detected: "+tabSwitches}});
-function speak(t){
- return new Promise(res=>{
-  if(!$("voice").checked||!window.speechSynthesis)return res();
-  speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(t);u.onend=u.onerror=res;speechSynthesis.speak(u)})}
-async function ask(q,n,total){
- curQ=q;qStart=0;$("prog").textContent=`Question ${n} of ${total}`;$("pbar").style.width=((n-1)/total*100)+"%";
- add("ai",`<b>Question ${n}.</b> ${esc(q)}`);
- await speak(q);qStart=Date.now();
- if($("voice").checked&&!recording&&active)toggleRec()}
-async function toggleRec(){
- if(recording){mr.stop();return}
- if(!navigator.mediaDevices||!window.MediaRecorder)return toast("This browser cannot record audio. Type your answer instead.");
- try{
-  speechSynthesis.cancel();
-  const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-  mr=new MediaRecorder(stream);chunks=[];
-  mr.ondataavailable=e=>chunks.push(e.data);
-  mr.onstart=()=>{recording=true;recT0=Date.now();$("mic").textContent="Stop and transcribe"};
-  mr.onstop=async()=>{
-   recording=false;stream.getTracks().forEach(t=>t.stop());$("mic").textContent="Record answer";
-   lastSecs=(Date.now()-recT0)/1000;
-   const fd=new FormData();fd.append("file",new Blob(chunks,{type:mr.mimeType||"audio/webm"}),"answer.webm");
-   $("mic").disabled=true;$("ans").placeholder="Transcribing…";
-   try{const j=await fetch("/api/transcribe",{method:"POST",body:fd,headers:authH()}).then(parse);
-    $("ans").value=($("ans").value+" "+j.text).trim()}
-   catch(e){toast(e)}
-   $("mic").disabled=false;$("ans").placeholder="Type your answer, or press Record"};
-  mr.start()}
- catch(e){toast("Microphone problem: "+e.message)}}
-async function startI(){
- if(!$("resume").value.trim()||!$("jd").value.trim()){toast("Add your resume and job description first.");return go("inputs")}
- $("chat").innerHTML="";$("rep").classList.add("hide");$("startBtn").disabled=true;busy=true;
- log=[];stats={wpm:[],fillers:0};tabSwitches=0;$("warn").textContent="";lastSecs=null;
- try{
-  const r=await post("/api/interview/start",{resume:$("resume").value,job_description:$("jd").value,role:$("role").value||"the role",difficulty:$("diff").value});
-  SID=r.session_id;active=true;showInput(true);busy=false;await ask(r.question,r.number,r.total)}
- catch(e){toast(e)}
- busy=false;$("startBtn").disabled=false}
-async function sendA(){
- if(recording)return toast("Press Stop and transcribe first, then submit.");
- const a=$("ans").value.trim();if(!a||busy)return;
- const secs=lastSecs;lastSecs=null;const q=curQ;
- busy=true;$("send").disabled=true;$("ans").value="";add("me",esc(a));
- const sp=post("/api/speech/analyze",{text:a,seconds:secs}).catch(()=>null);
- if($("star").checked)post("/api/star/check",{question:q,answer:a}).then(s=>{
-  if(!s||!s.is_behavioural)return;
-  const f=k=>s[k]?"yes":"missing";
-  add("coach",`<b>STAR check.</b> Situation: ${f("situation")}. Task: ${f("task")}. Action: ${f("action")}. Result: ${f("result")}. ${esc(s.tip||"")}`)}).catch(()=>{});
- try{
-  const r=await post("/api/interview/answer",{session_id:SID,answer:a});
-  const sc=Object.entries(r.scores||{}).map(([k,v])=>`<span class="chip ${cls(v*10)}">${esc(k)} ${v}/10</span>`).join("");
-  const x=await sp;let speech="";
-  if(x){stats.fillers+=x.filler_total;if(x.wpm)stats.wpm.push(x.wpm);
-   speech=`<span class="chip nu">${x.words} words</span>`+(x.wpm?`<span class="chip nu">${x.wpm} words per minute, ${esc(x.pace)}</span>`:"")+`<span class="chip nu">${x.filler_total} filler word${x.filler_total===1?"":"s"}${x.filler_total?" ("+esc(Object.keys(x.fillers).join(", "))+")":""}</span>`}
-  log.push({q,a,feedback:r.feedback||"",scores:r.scores||{}});
-  add("ai",`<div class="meta">${sc}${speech}</div>${esc(r.feedback||"")}`);
-  if(r.finished){active=false;showInput(false);$("prog").textContent="Interview complete";$("pbar").style.width="100%";await final()}
-  else{busy=false;await ask(r.next_question,r.number,r.total)}}
- catch(e){toast(e)}
- busy=false;$("send").disabled=false}
-async function final(){
- try{
-  const r=await get("/api/interview/report/"+SID);ivScore=r.overall;$("rep").classList.remove("hide");
-  const L=a=>"<ul>"+(a||[]).map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>";
-  const wpm=stats.wpm.length?Math.round(stats.wpm.reduce((a,b)=>a+b,0)/stats.wpm.length):null;
-  lastReport={role:$("role").value||"",overall:r.overall,recommendation:r.recommendation,strengths:r.strengths||[],weaknesses:r.weaknesses||[],next_steps:r.next_steps||[],wpm,fillers:stats.fillers,tab_switches:tabSwitches,transcript:log};
-  $("rep").innerHTML=`<h3>Interview report</h3>
-   <div class="score-big"><div class="n">${r.overall}<small style="font-size:22px">/100</small></div><span class="pill ${cls(r.overall)}" style="font-size:15px;padding:6px 14px">${esc(r.recommendation)}</span>
-    <span class="chip nu">${wpm?wpm+" words per minute":"No speech pace (answers were typed)"}</span><span class="chip nu">${stats.fillers} filler words</span><span class="chip nu">${tabSwitches} tab switches</span></div>
-   <div class="rep-grid"><div class="r-good"><h4>Strengths</h4>${L(r.strengths)}</div><div class="r-bad"><h4>Weaknesses</h4>${L(r.weaknesses)}</div><div class="r-next"><h4>Next steps</h4>${L(r.next_steps)}</div></div>
-   <div class="row-btn" style="margin-top:16px;align-items:center"><button class="btn" onclick="pdf()">Download PDF report</button><span id="saved" class="mut"></span></div>`;
-  $("rep").scrollIntoView({behavior:"smooth",block:"start"});
-  if(localStorage.getItem("tok")){
-   try{await post("/api/history/save",{role:lastReport.role,score:r.overall,recommendation:r.recommendation,wpm,fillers:stats.fillers,tab_switches:tabSwitches,report:lastReport});$("saved").textContent="Saved to your history."}
-   catch(e){$("saved").textContent="Could not save: "+e}}
-  if(D){D.readiness=await post("/api/readiness",{ats:D.ats.score,match:D.ats.skill_gap.coverage,interview:ivScore,resume:$("resume").value});renderInsights()}
-  refreshStats()}
- catch(e){toast(e)}}
-async function pdf(){
- const res=await fetch("/api/report/pdf",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(lastReport)});
- if(!res.ok)return toast("The PDF could not be created: "+(await res.text()).slice(0,160));
- const a=document.createElement("a");a.href=URL.createObjectURL(await res.blob());a.download="interview-report.pdf";a.click()}
-
-/* ---------- bulk ranking ---------- */
-async function rankAll(){
- const files=$("bfiles").files,jd=$("jd").value.trim();
- if(!jd){toast("Add a job description on the Resume and job page first.");return go("inputs")}
- if(!files.length)return toast("Choose one or more resume files.");
- const f=new FormData();f.append("job_description",jd);[...files].forEach(x=>f.append("files",x));
- $("bres").textContent="Ranking…";
- try{const j=await fetch("/api/bulk-rank",{method:"POST",body:f}).then(parse);
-  $("bres").innerHTML=`<table><tr><th>Rank</th><th>Resume</th><th style="min-width:140px">Match</th><th>Matched keywords</th><th>Missing keywords</th></tr>`+
-   j.results.map(r=>`<tr><td><b>${r.rank}</b></td><td>${esc(r.name)}</td><td><span class="pill ${cls(r.score)}">${r.score}%</span><div class="bar" style="margin-top:6px"><i style="width:${r.score}%"></i></div></td><td>${chips(r.matched,"ok")}</td><td>${chips(r.missing,"bad")}</td></tr>`).join("")+`</table>`}
- catch(e){$("bres").textContent="";toast(e)}}
-
-/* ---------- start ---------- */
-(async function init(){
- setMode("login");
- if(localStorage.getItem("tok")){try{await get("/api/history");enterApp();return}catch(e){clearSession()}}
- showAuth()})();
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+function md(t){t=esc(t);t=t.replace(/```\w*\n?([\s\S]*?)```/g,(m,c)=>`<pre>${c}</pre>`);return t.replace(/`([^`\n]+)`/g,"<code>$1</code>").replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>")}
+let CH=[],askBusy=false;
+function askAdd(role,text){const d=document.createElement("div");d.className="m bub "+(role==="user"?"me":"ai");d.innerHTML=role==="user"?esc(text):md(text);$("achat").appendChild(d);d.scrollIntoView({block:"nearest"});return d}
+async function askSend(q){q=(q||$("aq").value).trim();if(!q||askBusy)return;askBusy=true;$("aq").value="";askAdd("user",q);CH.push({role:"user",content:q});const th=askAdd("assistant","Thinking…");
+ try{const r=await post("/api/chat",{messages:CH,use_context:$("usectx").checked,resume:$("resume").value,job_description:$("jd").value});
+  th.innerHTML=md(r.reply);CH.push({role:"assistant",content:r.reply});
+  if($("askvoice").checked&&window.speechSynthesis){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(r.reply.replace(/[`*#]/g,"")))}}
+ catch(e){th.innerHTML="⚠ "+esc(String(e));CH.pop()}askBusy=false}
+$("aq").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();askSend()}});
+function askListen(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return alert("Speech input needs Chrome or Edge");
+ if(window.speechSynthesis)speechSynthesis.cancel();const r=new SR();r.lang="en-IN";const b=$("amic");
+ r.onstart=()=>{b.textContent="Listening…";b.style.background="#c0392b"};r.onend=()=>{b.textContent="🎤 Speak";b.style.background=""};
+ r.onresult=e=>{$("aq").value+=(($("aq").value?" ":"")+e.results[0][0].transcript)};r.onerror=e=>alert("Speech error: "+e.error);try{r.start()}catch(x){alert(x)}}
+const getTok=()=>{try{return localStorage.getItem("rai_tok")}catch{return null}};
+const setTok=t=>{try{t?localStorage.setItem("rai_tok",t):localStorage.removeItem("rai_tok")}catch{}};
+function toast(m){const d=document.createElement("div");d.className="toast";d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),3500)}
+function view(v){document.querySelectorAll(".view").forEach(x=>x.classList.add("hide"));$("v-"+v).classList.remove("hide");document.querySelectorAll(".err").forEach(e=>e.textContent="")}
+function eye(id,b){const i=$(id);i.type=i.type==="password"?"text":"password";b.textContent=i.type==="password"?"👁":"🙈"}
+function meter(p){let s=0;if(p.length>=8)s++;if(/[A-Z]/.test(p)&&/[a-z]/.test(p))s++;if(/\d/.test(p))s++;if(/[^A-Za-z0-9]/.test(p))s++;
+ const m=$("meter");m.style.width=(s*25)+"%";m.style.background=["#fb7185","#fb7185","#fbbf24","#34d399","#22d3ee"][s]}
+async function authCall(btn,errId,url,body,ok){const b=$(btn),t=b.textContent;b.disabled=true;b.textContent="Please wait…";$(errId).textContent="";
+ try{ok(await post(url,body))}catch(e){$(errId).textContent=String(e)}b.disabled=false;b.textContent=t}
+const okEmail=e=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
+function doLogin(){const email=$("l-email").value.trim(),password=$("l-pass").value;if(!okEmail(email))return $("e-login").textContent="Enter a valid email";if(!password)return $("e-login").textContent="Enter your password";
+ authCall("b-login","e-login","/api/account/login",{email,password},r=>{setTok(r.token);enterApp(r.user)})}
+function doSignup(){const name=$("s-name").value.trim(),email=$("s-email").value.trim(),password=$("s-pass").value;
+ if(!name)return $("e-signup").textContent="Enter your name";if(!okEmail(email))return $("e-signup").textContent="Enter a valid email";
+ if(password.length<8)return $("e-signup").textContent="Password must be at least 8 characters";if(password!==$("s-pass2").value)return $("e-signup").textContent="Passwords don't match";
+ authCall("b-signup","e-signup","/api/account/signup",{name,email,password},r=>{setTok(r.token);enterApp(r.user)})}
+function doForgot(){const email=$("f-email").value.trim();if(!okEmail(email))return $("e-forgot").textContent="Enter a valid email";
+ authCall("b-forgot","e-forgot","/api/account/forgot",{email},r=>{toast(r.message);view("reset")})}
+function doReset(){const email=$("f-email").value.trim(),code=$("r-code").value.trim(),password=$("r-pass").value;if(code.length!==6)return $("e-reset").textContent="Enter the 6-digit code";
+ if(password.length<8)return $("e-reset").textContent="Password must be at least 8 characters";
+ authCall("b-reset","e-reset","/api/account/reset",{email,code,password},r=>{toast(r.message);$("l-email").value=email;view("login")})}
+function enterApp(u){$("auth").classList.add("hide");$("app").classList.remove("hide");const n=u.name||"there";
+ $("uname").textContent=n;$("uchip").textContent=n;$("av").textContent=n[0].toUpperCase();setGreeting();setInterval(setGreeting,60000)}
+function setGreeting(){const h=new Date().getHours();
+ const g=h>=5&&h<12?"Good morning ☀️":h>=12&&h<17?"Good afternoon 🌤️":h>=17&&h<21?"Good evening 🌆":"Good night 🌙";$("greet").textContent=g}
+function logout(){setTok(null);location.reload()}
+document.addEventListener("keydown",e=>{if(e.key!=="Enter")return;const v=[...document.querySelectorAll(".view")].find(x=>!x.classList.contains("hide"));if(v&&!$("auth").classList.contains("hide")&&e.target.tagName==="INPUT"){const b=v.querySelector("button.p:not(.ghost)");b&&b.click()}});
+const _render=render;render=function(){_render();$("k1").textContent=D.ats.score;$("k2").textContent=(D.job_matches[0]?D.job_matches[0].match:0)+"%";$("k3").textContent=D.readiness.overall+"%";$("k4").textContent=ivScore!=null?Math.round(ivScore):"–"};
+(async()=>{const t=getTok();if(t){try{const r=await fetch("/api/account/me",{headers:{Authorization:"Bearer "+t}});if(r.ok){enterApp(await r.json());return}}catch{}setTok(null)}})();
 </script></body></html>

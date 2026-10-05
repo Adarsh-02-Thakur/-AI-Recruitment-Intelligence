@@ -1,21 +1,20 @@
 import io, uuid
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from auth import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import pdfplumber, docx
 import scoring
 from llm import ask_json
-from fastapi.responses import JSONResponse
-import features
+
+from auth import router as auth_router
 
 app = FastAPI(title="AI Recruitment Intelligence")
-features.install(app)
-
-@app.exception_handler(Exception)
-async def all_errors(request, exc):
-    return JSONResponse({"detail": f"{type(exc).__name__}: {exc}"}, status_code=500)
+app.include_router(auth_router)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
 JOBS = [  # replace with a database / job-board API (Adzuna, JSearch, etc.)
     {"id": 1, "title": "Python Backend Developer", "description": "Python FastAPI Django REST API SQL PostgreSQL Docker AWS Git CI/CD microservices testing 2 years"},
     {"id": 2, "title": "Data Scientist", "description": "Python pandas numpy scikit-learn machine learning statistics SQL data analysis tableau deep learning 3 years"},
@@ -69,6 +68,7 @@ class StartIn(BaseModel):
     job_description: str
     role: str = "the role"
     difficulty: str = "medium"
+    mode: str = "real"
 
 
 @app.post("/api/interview/start")
@@ -135,5 +135,42 @@ class ReadyIn(BaseModel):
 def readiness(b: ReadyIn):
     return scoring.career_readiness(b.ats, b.match, b.interview, b.resume)
 
+class CoachIn(BaseModel):
+    session_id: str
+    message: str = ""
 
+
+@app.post("/api/interview/coach")
+def coach(b: CoachIn):
+    S = SESSIONS.get(b.session_id)
+    if not S: raise HTTPException(404, "Session not found")
+    if S["ctx"].mode != "practice": raise HTTPException(403, "AI coach is only available in Practice mode")
+    if b.message.strip():
+        task = f'The candidate asks: "{b.message}". Answer helpfully and briefly, relating it to the interview.'
+    else:
+        task = "The candidate does not know the answer. Give a model answer (use STAR for behavioral questions), 120-170 words, then 2 key takeaways."
+    return ask_json("You are a supportive interview coach.",
+                    f"Role: {S['ctx'].role}\nResume:\n{S['ctx'].resume[:2500]}\nCurrent interview question: {S['current']}\n{task}\n"
+                    'Return {"reply": ""}')
+
+class ChatIn(BaseModel):
+    messages: list[dict]
+    use_context: bool = False
+    resume: str = ""
+    job_description: str = ""
+
+
+@app.post("/api/chat")
+def chat_api(b: ChatIn):
+    from chat_llm import chat
+    msgs = [{"role": m["role"], "content": str(m.get("content", ""))[:4000]}
+            for m in b.messages[-12:] if m.get("role") in ("user", "assistant")]
+    if not msgs or msgs[-1]["role"] != "user":
+        raise HTTPException(400, "Last message must be from the user")
+    system = ("You are a knowledgeable, honest assistant for a recruitment and career platform, but you can answer any question. "
+              "Give clear, accurate, well-structured answers. If you are not sure or the topic may have changed recently, say so "
+              "instead of guessing. Never invent facts, numbers or sources. Use code blocks for code.")
+    if b.use_context and b.resume.strip():
+        system += f"\n\nCandidate resume:\n{b.resume[:3000]}\n\nTarget job description:\n{b.job_description[:2000]}"
+    return {"reply": chat(system, msgs)}
 app.mount("/", StaticFiles(directory="../frontend", html=True), name="static")
