@@ -130,6 +130,8 @@ a.l{color:#a78bfa;cursor:pointer;text-decoration:none;font-weight:600}a.l:hover{
   <button class="p hide" id="mic" onclick="listen()">🎤 Speak</button>
   <button class="p hide" id="send" onclick="sendA()">Submit answer</button>
   <button class="p hide" id="skip" onclick="skipQ()" style="background:#555">Skip</button>
+  <button class="p hide" id="pausebtn" onclick="togglePause()" style="background:#555">⏸ Pause recording</button>
+  <button class="p hide" id="endbtn" onclick="endInterview()" style="background:#c0392b">⏹ End interview</button>
   <div id="coachbox" class="hide" style="margin-top:10px;border-top:1px solid #2a2f4d;padding-top:10px">
    <b>🤖 AI Coach</b> <span class="mut">(Practice mode only)</span><br>
    <button class="p" onclick="coach('')">I don't know — show model answer</button>
@@ -196,7 +198,7 @@ async function analyze(){const resume=$("resume").value,job_description=$("jd").
 async function plan(){$("plan").textContent="Generating…";try{const p=await post("/api/learning-plan",{resume:$("resume").value,job_description:$("jd").value});
  $("plan").innerHTML=p.weeks.map(w=>`<p><b>Week ${w.week}: ${w.focus}</b><br>${w.tasks.join("<br>")}</p>`).join("")}catch(e){$("plan").textContent=e}}
 const add=(c,t)=>{$("chat").insertAdjacentHTML("beforeend",`<div class="m ${c}">${t}</div>`);$("chat").lastChild.scrollIntoView()};
-let stream=null,recorder=null,chunks=[],busy=false;
+let stream=null,recorder=null,chunks=[],busy=false,nAns=0;
 function speak(t){return new Promise(res=>{if(!$("voice").checked||!window.speechSynthesis)return res();speechSynthesis.cancel();if(typeof listening!=="undefined"&&listening&&rec)rec.stop();
  const u=new SpeechSynthesisUtterance(t.replace(/<[^>]+>/g,""));const v=speechSynthesis.getVoices().find(x=>/en/i.test(x.lang));if(v)u.voice=v;
  u.onstart=()=>{$("avatar").classList.add("talk");$("speakst").textContent="speaking…"};u.onend=u.onerror=()=>{$("avatar").classList.remove("talk");$("speakst").textContent="";res()};speechSynthesis.speak(u)})}
@@ -204,19 +206,27 @@ async function startCam(){try{stream=await navigator.mediaDevices.getUserMedia({
  catch(e){$("camst").textContent="camera blocked — allow it in the browser address bar"}}
 function startRec(){if(!stream||!$("rec").checked)return;chunks=[];recorder=new MediaRecorder(stream);recorder.ondataavailable=e=>chunks.push(e.data);recorder.start()}
 function stopRec(){return new Promise(res=>{if(!recorder||recorder.state==="inactive")return res(null);recorder.onstop=()=>res(URL.createObjectURL(new Blob(chunks,{type:"video/webm"})));recorder.stop()})}
-const ui=on=>["ans","send","mic","skip"].forEach(i=>$(i).classList.toggle("hide",!on));
-async function startI(){$("chat").innerHTML="";$("rep").classList.add("hide");if(!$("resume").value||!$("jd").value)return alert("Add resume and job description first (tab 1).");
- await startCam();const practice=$("mode").value==="practice";
+const ui=on=>{["ans","send","mic","skip","endbtn"].forEach(i=>$(i).classList.toggle("hide",!on));$("pausebtn").classList.toggle("hide",!(on&&recorder&&recorder.state!=="inactive"));$("pausebtn").textContent="⏸ Pause recording"};
+function stopMedia(){try{if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}try{if(rec&&listening)rec.stop()}catch(e){}
+ if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$("cam").srcObject=null;$("camst").textContent="camera off";$("avatar").classList.remove("talk");$("speakst").textContent=""}
+function togglePause(){if(!recorder)return;if(recorder.state==="recording"){recorder.pause();$("pausebtn").textContent="▶ Resume recording";$("camst").textContent="recording paused"}
+ else if(recorder.state==="paused"){recorder.resume();$("pausebtn").textContent="⏸ Pause recording";$("camst").textContent="camera on"}}
+async function endInterview(){if(!confirm("End the interview now? Your camera and recording will stop."))return;ui(false);$("coachbox").classList.add("hide");
+ const url=await stopRec();stopMedia();
+ if(SID&&nAns>0){await final(url)}else{add("ai","Interview ended. Answer at least one question to get a report.");if(url)add("ai",`<a style="color:#a78bfa" href="${url}" download="interview.webm">⬇ Download recording</a>`)}
+ SID=null}
+async function startI(){stopMedia();$("chat").innerHTML="";$("rep").classList.add("hide");if(!$("resume").value||!$("jd").value)return alert("Add resume and job description first (tab 1).");
+ const practice=$("mode").value==="practice";nAns=0;
  try{const r=await post("/api/interview/start",{resume:$("resume").value,job_description:$("jd").value,role:$("role").value||"the role",difficulty:$("diff").value,mode:$("mode").value});
-  SID=r.session_id;$("coachbox").classList.toggle("hide",!practice);startRec();add("ai",`Q${r.number}/${r.total}: ${r.question}`);ui(true);await speak(r.question)}catch(e){alert(e)}}
+  SID=r.session_id;await startCam();$("coachbox").classList.toggle("hide",!practice);startRec();add("ai",`Q${r.number}/${r.total}: ${r.question}`);ui(true);await speak(r.question)}catch(e){stopMedia();ui(false);alert(e)}}
 async function sendA(txt){const a=(txt||$("ans").value).trim();if(!a||busy)return;busy=true;$("ans").value="";add("me",a);
- try{const r=await post("/api/interview/answer",{session_id:SID,answer:a});const s=Object.entries(r.scores).map(([k,v])=>`${k}: ${v}/10`).join(" · ");
-  add("ai",`<small class=mut>${s}</small><br>${r.feedback}`);await speak(r.feedback);
+ try{const r=await post("/api/interview/answer",{session_id:SID,answer:a});nAns++;const s=Object.entries(r.scores).map(([k,v])=>`${k}: ${v}/10`).join(" · ");
+  add("ai",`<small class=mut>${s}</small><br>${r.feedback}`);await speak(r.feedback);if(!SID){busy=false;return}
   if(r.finished){ui(false);$("coachbox").classList.add("hide");await final()}else{add("ai",`Q${r.number}/${r.total}: ${r.next_question}`);await speak(r.next_question)}}catch(e){alert(e)}busy=false}
 const skipQ=()=>sendA("I don't know the answer to this question.");
 async function coach(m){try{add("co",m?`🙋 ${m}`:"🙋 I don't know this one — help!");$("cq").value="";const r=await post("/api/interview/coach",{session_id:SID,message:m});add("co","🤖 Coach: "+r.reply);await speak(r.reply)}catch(e){alert(e)}}
-async function final(){const url=await stopRec();if(stream)stream.getTracks().forEach(t=>t.stop());$("camst").textContent="";
- const r=await fetch("/api/interview/report/"+SID).then(x=>x.json());ivScore=r.overall;$("rep").classList.remove("hide");
+async function final(u){const url=(u!==undefined)?u:await stopRec();stopMedia();
+ const rr=await fetch("/api/interview/report/"+SID);const r=await rr.json();if(!rr.ok){$("rep").classList.remove("hide");$("rep").textContent="Could not build the report: "+(r.detail||"error");return}ivScore=r.overall;$("rep").classList.remove("hide");
  $("rep").innerHTML=`<h3>Interview Report: ${r.overall}/100 — ${r.recommendation}</h3><b>Strengths</b><br>${r.strengths.join("<br>")}<br><b>Weaknesses</b><br>${r.weaknesses.join("<br>")}<br><b>Next steps</b><br>${r.next_steps.join("<br>")}`+(url?`<br><br><a style="color:#6c7bff" href="${url}" download="interview.webm">⬇ Download recording</a>`:"");
  if(D){D.readiness=await post("/api/readiness",{ats:D.ats.score,match:D.ats.skill_gap.coverage,interview:ivScore,resume:$("resume").value});render()}}
 let rec=null,listening=false;

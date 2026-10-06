@@ -14,11 +14,48 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 ATTEMPTS: dict = {}
 
 
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+PG = DATABASE_URL.startswith("postgres")
+if PG:
+    import psycopg2, psycopg2.extras
+_ready = False
+
+
+class _Conn:
+    """Same interface for SQLite (local) and Postgres (Render). Use: with db() as c: c.execute(sql, params)"""
+    def __init__(self):
+        if PG:
+            self.c = psycopg2.connect(DATABASE_URL, connect_timeout=10)
+        else:
+            self.c = sqlite3.connect(DB)
+            self.c.row_factory = sqlite3.Row
+
+    def execute(self, sql, params=()):
+        if PG:
+            cur = self.c.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur.execute(sql.replace("?", "%s"), params)
+            return cur
+        return self.c.execute(sql, params)
+
+    def commit(self):
+        self.c.commit()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, et, ev, tb):
+        self.c.commit() if et is None else self.c.rollback()
+        self.c.close()
+
+
 def db():
-    c = sqlite3.connect(DB)
-    c.row_factory = sqlite3.Row
-    c.execute("""CREATE TABLE IF NOT EXISTS users(email TEXT PRIMARY KEY, name TEXT, pw TEXT, created REAL,
-                 reset_hash TEXT, reset_exp REAL, reset_tries INTEGER DEFAULT 0)""")
+    global _ready
+    c = _Conn()
+    if not _ready:
+        c.execute("""CREATE TABLE IF NOT EXISTS users(email TEXT PRIMARY KEY, name TEXT, pw TEXT, created DOUBLE PRECISION,
+                     reset_hash TEXT, reset_exp DOUBLE PRECISION, reset_tries INTEGER DEFAULT 0)""")
+        c.commit()
+        _ready = True
     return c
 
 
