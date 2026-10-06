@@ -1,6 +1,7 @@
 import io, uuid
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import pdfplumber, docx
@@ -8,13 +9,18 @@ import scoring
 from llm import ask_json
 from auth import router as auth_router
 from ats_analyzer import router as ats_router
-from fastapi.responses import JSONResponse
+
 app = FastAPI(title="AI Recruitment Intelligence")
-app.include_router(auth_router)@app.exception_handler(Exception)
+app.include_router(auth_router)
+app.include_router(ats_router)
+
+
+@app.exception_handler(Exception)
 async def show_errors(request, exc):
     print(f"[ERROR] {request.url.path}: {type(exc).__name__}: {exc}")
     return JSONResponse({"detail": f"{type(exc).__name__}: {str(exc)[:300]}"}, status_code=500)
-app.include_router(ats_router)
+
+
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 JOBS = [  # replace with a database / job-board API (Adzuna, JSearch, etc.)
